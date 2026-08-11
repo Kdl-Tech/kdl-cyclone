@@ -7,6 +7,29 @@ Vérification effectuée le **9 août 2026**.
 
 ---
 
+## 0. Géocodage Open-Meteo — utilisé hors ligne uniquement
+
+| | |
+|---|---|
+| Service | https://geocoding-api.open-meteo.com/ |
+| Données | GeoNames, CC BY 4.0 |
+| Clé d'accès | Aucune |
+| Coût | 0 € |
+| Usage | **À la fabrication seulement** : `scripts/build-communes.mjs` |
+
+Les 88 communes et zones proposées dans l'onglet météo ont leurs coordonnées
+issues de ce service, figées dans `src/communes.js`. **L'application ne
+l'interroge jamais à l'exécution** : la liste est statique, et aucun nom saisi
+par un visiteur n'est envoyé où que ce soit.
+
+Ce choix est délibéré : écrire des latitudes à la main aurait fini par produire
+un bulletin correspondant à un point situé en mer, ou dans l'île voisine.
+
+Relancer `node scripts/build-communes.mjs` uniquement si la liste des
+territoires change.
+
+---
+
 ## 1. National Hurricane Center (NOAA / NWS)
 
 | | |

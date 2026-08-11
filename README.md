@@ -7,7 +7,7 @@
 **Veille des ondes tropicales et des systèmes cycloniques dans l'Atlantique**
 *Tropical wave and cyclone tracking for the Atlantic*
 
-[![version](https://img.shields.io/badge/version-0.10.0-1567a8)](CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-0.11.0-1567a8)](CHANGELOG.md)
 [![tests](https://github.com/Kdl-Tech/kdl-cyclone/actions/workflows/tests.yml/badge.svg)](https://github.com/Kdl-Tech/kdl-cyclone/actions/workflows/tests.yml)
 [![PWA](https://img.shields.io/badge/PWA-installable-0d9488)](https://cyclone.kdl-tech.fr/)
 [![dépendances](https://img.shields.io/badge/d%C3%A9pendances-0-17a86a)](package.json)
@@ -87,8 +87,9 @@ partout une étiquette violette, une barre hachurée et la mention
   Dominique, Sainte-Lucie, Barbade, Antigua-et-Barbuda, Trinité-et-Tobago.
   Chacun avec **ses** autorités : Météo-France ne couvre pas les îles
   indépendantes, et l'application ne fait jamais semblant du contraire.
-- **Météo locale** — conditions du moment, courbe horaire, dix jours, mer,
-  houle, UV, qualité de l'air et brume de sable.
+- **Météo locale, à la commune** — 88 communes et zones : conditions du moment,
+  courbe horaire, dix jours, mer, houle, UV, qualité de l'air et brume de
+  sable. Le lieu choisi tient dans l'URL, donc dans un lien partagé.
 - **Mode préparation** — liste de vérification qui fonctionne sans connexion.
 - **Hors connexion** — le dernier état connu reste consultable, clairement daté.
 

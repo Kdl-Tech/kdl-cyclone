@@ -21,6 +21,9 @@ import { lireTable as lireSlugs, resoudre as resoudreSlug } from './src/slugs.js
 import { valider, enregistrer, verifierDebit, synthese as syntheseRetours, LIMITES } from './src/feedback.js';
 import { mesure } from './src/mesure.js';
 import { cheminImage, SECTEURS, CANAUX } from './src/sources/satellite.js';
+import { COMMUNES, communePar } from './src/communes.js';
+import { territoire as territoirePar } from './src/territoires.js';
+import { fetchBulletin } from './src/sources/meteo.js';
 
 const PUBLIC = path.join(ROOT, 'public');
 const VERSION = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8')).version;
@@ -133,6 +136,39 @@ function pageHtml(chemin, etatCourantValeur, canoniqueForcee) {
   return GABARIT
     .replace('<!--KDL_META-->', balises(page, canoniqueForcee || chemin))
     .replace('<html lang="fr"', `<html lang="fr" data-route="${page.vue}"`);
+}
+
+/**
+ * Bulletins par commune, gardés dix minutes en mémoire.
+ *
+ * Sans ce cache, chaque visiteur consultant la même commune déclencherait un
+ * appel : le quota gratuit d'Open-Meteo dépendrait alors du trafic, ce que
+ * l'architecture évite depuis le premier jour. Ici, une commune consultée cent
+ * fois en dix minutes coûte une seule requête.
+ */
+const cacheLieux = new Map();
+const DUREE_CACHE_LIEU = 10 * 60 * 1000;
+
+async function bulletinDuLieu(territoire, lieu) {
+  const cle = `${territoire}:${lieu.cle}`;
+  const garde = cacheLieux.get(cle);
+  if (garde && Date.now() - garde.lu < DUREE_CACHE_LIEU) return garde.valeur;
+
+  const fuseau = (territoirePar(territoire) || {}).fuseau || 'America/Guadeloupe';
+  const brut = await fetchBulletin({ lat: lieu.lat, lon: lieu.lon }, fuseau);
+  const valeur = {
+    ...brut,
+    lieu: { cle: lieu.cle, nom: lieu.nom, lat: lieu.lat, lon: lieu.lon },
+    territoire,
+  };
+  cacheLieux.set(cle, { valeur, lu: Date.now() });
+
+  // Le cache ne grandit pas indéfiniment : 88 lieux au total, on borne large.
+  if (cacheLieux.size > 120) {
+    const plusAncien = [...cacheLieux.entries()].sort((a, b) => a[1].lu - b[1].lu)[0];
+    cacheLieux.delete(plusAncien[0]);
+  }
+  return valeur;
 }
 
 /** Cache mémoire du dernier état, pour ne pas relire le disque à chaque requête. */
@@ -279,9 +315,34 @@ const serveur = http.createServer(async (req, res) => {
 
     // Bulletin météo d'un territoire, servi à la demande : il ne voyage pas
     // dans l'état principal, qui est chargé à chaque visite.
+    // Lieux couverts par la météo locale. Liste statique, produite hors ligne :
+    // aucun service de géocodage n'est interrogé pendant l'exécution.
+    if (chemin === '/api/communes') {
+      return json(req, res, COMMUNES, 200, 'public, max-age=86400');
+    }
+
     if (chemin.startsWith('/api/meteo/')) {
       const cle = decodeURIComponent(chemin.slice('/api/meteo/'.length));
       if (!/^[a-z-]{2,32}$/.test(cle)) return json(req, res, { erreur: 'Territoire invalide' }, 400);
+
+      // Bulletin d'une commune précise, à la demande. Le lieu doit figurer
+      // dans la liste : on ne prend jamais de coordonnées arbitraires, ce qui
+      // ferait de l'application un relais de requêtes ouvert.
+      const lieuDemande = url.searchParams.get('lieu');
+      if (lieuDemande) {
+        if (!/^[a-z0-9-]{2,48}$/.test(lieuDemande)) {
+          return json(req, res, { erreur: 'Lieu invalide' }, 400);
+        }
+        const lieu = communePar(cle, lieuDemande);
+        if (!lieu) return json(req, res, { erreur: 'Lieu inconnu pour ce territoire' }, 404);
+        try {
+          const bulletin = await bulletinDuLieu(cle, lieu);
+          return json(req, res, bulletin, 200, 'public, max-age=600');
+        } catch {
+          return json(req, res, { erreur: 'Météo momentanément indisponible pour ce lieu' }, 503);
+        }
+      }
+
       const tous = await storeBulletins.lire();
       const b = tous[cle];
       if (!b) return json(req, res, { erreur: 'Bulletin indisponible pour ce territoire' }, 404);

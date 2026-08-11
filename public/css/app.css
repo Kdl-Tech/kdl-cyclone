@@ -2365,3 +2365,54 @@ button { font: inherit; color: inherit; }
 @media (max-width: 480px) {
   .passerelle__actions .bouton { flex: 1 1 100%; }
 }
+
+/* ------------------------------------------------- pictogrammes météo */
+
+/* Chaque couche d'un pictogramme porte la couleur de ce qu'elle représente.
+   Un tracé monochrome obligeait à déchiffrer la forme ; ici, le doré du
+   soleil, le gris-bleu du nuage et le bleu des gouttes se lisent avant même
+   d'avoir regardé le dessin. Les aplats restent légers : ce sont des
+   pictogrammes, pas des illustrations. */
+.picto .p-soleil { stroke: var(--d-soleil); }
+.picto .p-soleil circle { fill: color-mix(in srgb, var(--d-soleil) 30%, transparent); }
+
+.picto .p-lune { stroke: #b9c4d6; }
+.picto .p-lune path { fill: color-mix(in srgb, #b9c4d6 24%, transparent); }
+:root[data-theme="sombre"] .picto .p-lune { stroke: #e2e8f0; }
+
+.picto .p-nuage { stroke: #7d8fa6; }
+.picto .p-nuage path { fill: color-mix(in srgb, #7d8fa6 20%, transparent); }
+.picto .p-nuage--dense { stroke: #566b85; }
+.picto .p-nuage--dense path { fill: color-mix(in srgb, #566b85 34%, transparent); }
+:root[data-theme="sombre"] .picto .p-nuage { stroke: #9fb0c4; }
+:root[data-theme="sombre"] .picto .p-nuage--dense { stroke: #b6c4d6; }
+
+.picto .p-pluie { stroke: var(--d-pluie); stroke-width: 2; }
+.picto .p-neige { stroke: #7dd3fc; stroke-width: 2.4; }
+.picto .p-brume { stroke: #94a3b8; }
+.picto .p-voile { stroke: #94a3b8; }
+
+.picto .p-eclair { stroke: var(--d-soleil); stroke-width: 1.6; }
+.picto .p-eclair path { fill: color-mix(in srgb, var(--d-soleil) 55%, transparent); }
+
+/* Dans le bandeau des conditions du moment, le fond est déjà coloré : les
+   pictogrammes y passent en blanc pour rester lisibles. */
+.meteo-actuel__picto .picto g { stroke: rgba(255, 255, 255, 0.95); }
+.meteo-actuel__picto .picto .p-soleil circle { fill: rgba(255, 236, 179, 0.5); }
+.meteo-actuel__picto .picto .p-nuage path { fill: rgba(255, 255, 255, 0.22); }
+.meteo-actuel__picto .picto .p-pluie { stroke: #bfdbfe; }
+.meteo-actuel__picto .picto .p-eclair { stroke: #fde047; }
+.meteo-actuel__picto .picto .p-eclair path { fill: rgba(253, 224, 71, 0.6); }
+
+/* Choix de la commune, en tête de la page météo : c'est la première question
+   qu'on se pose en l'ouvrant — « et chez moi ? ». */
+.lieu-choix {
+  display: inline-flex;
+  margin-bottom: var(--e5);
+  max-width: 100%;
+}
+.lieu-choix .territoire__valeur { max-width: min(48vw, 260px); }
+@media (max-width: 520px) {
+  .lieu-choix { display: flex; width: 100%; }
+  .lieu-choix .territoire__valeur { max-width: none; }
+}

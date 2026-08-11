@@ -65,6 +65,15 @@
    */
   function definirTerritoire(cle) {
     if (!territoireExiste(cle)) return;
+    // Le lieu appartient au territoire quitté : le garder dans l'URL ferait
+    // chercher « Saint-François » en Martinique.
+    try {
+      var u = new URL(location.href);
+      if (u.searchParams.has('lieu')) {
+        u.searchParams.delete('lieu');
+        history.replaceState(history.state, '', u.pathname + u.search);
+      }
+    } catch (e) { /* sans History API */ }
     try { localStorage.setItem(CLE_TERRITOIRE, cle); } catch (e) { /* stockage refusé */ }
     inscrireTerritoireDansUrl(cle);
     if (etat) { preparerEtat(etat); rendreTout(); }
@@ -1916,22 +1925,60 @@
   var bulletins = {};
 
   /** Pictogrammes maison : aucun jeu d'icônes tiers aux droits incertains. */
+  /**
+   * Pictogrammes météo maison — aucun jeu d'icônes tiers aux droits incertains.
+   *
+   * Chaque dessin est composé de couches nommées : le soleil, la lune, le
+   * nuage, les gouttes, l'éclair. Ces couches portent leur propre couleur, qui
+   * vient de la feuille de style et suit donc le thème. Un soleil doré, un
+   * nuage gris-bleu et des gouttes bleues se distinguent d'un coup d'œil,
+   * là où un tracé d'une seule couleur obligeait à déchiffrer la forme.
+   */
   var PICTO = {
-    soleil: '<circle cx="12" cy="12" r="4.6"/><path d="M12 2v2.4M12 19.6V22M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M2 12h2.4M19.6 12H22M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7"/>',
-    lune: '<path d="M20 14.6A8.6 8.6 0 1 1 9.4 4a6.9 6.9 0 0 0 10.6 10.6"/>',
-    'soleil-voile': '<circle cx="12" cy="11" r="4"/><path d="M12 3v1.8M4.9 6.3l1.3 1.3M19.1 6.3l-1.3 1.3M3 11h1.8M19.2 11H21"/><path d="M5 18h14"/>',
-    'lune-voile': '<path d="M18 12.4A6.6 6.6 0 1 1 10.6 5a5.3 5.3 0 0 0 7.4 7.4"/><path d="M5 19h14"/>',
-    'soleil-nuage': '<circle cx="9" cy="9" r="3.2"/><path d="M9 3.4v1.4M4.6 5.6l1 1M3.4 10h1.4"/><path d="M8.5 19a3.5 3.5 0 0 1 .3-7 4.6 4.6 0 0 1 8.7 1.2A3 3 0 0 1 17 19z"/>',
-    'lune-nuage': '<path d="M15.5 9.5A4.5 4.5 0 1 1 10.5 4a3.6 3.6 0 0 0 5 5"/><path d="M8.5 19a3.5 3.5 0 0 1 .3-7 4.6 4.6 0 0 1 8.7 1.2A3 3 0 0 1 17 19z"/>',
-    nuage: '<path d="M7.5 19a4 4 0 0 1 .4-8 5.2 5.2 0 0 1 9.9 1.4A3.4 3.4 0 0 1 17 19z"/>',
-    brume: '<path d="M4 9h16M4 13h16M6 17h12M6 5h12"/>',
-    bruine: '<path d="M7.5 15a4 4 0 0 1 .4-8 5.2 5.2 0 0 1 9.9 1.4A3.4 3.4 0 0 1 17 15z"/><path d="M9 18v1.5M13 18v2M17 18v1.5"/>',
-    pluie: '<path d="M7.5 14a4 4 0 0 1 .4-8 5.2 5.2 0 0 1 9.9 1.4A3.4 3.4 0 0 1 17 14z"/><path d="M8.5 17.5l-1 3M12.5 17.5l-1 3M16.5 17.5l-1 3"/>',
-    'pluie-forte': '<path d="M7.5 13a4 4 0 0 1 .4-8 5.2 5.2 0 0 1 9.9 1.4A3.4 3.4 0 0 1 17 13z"/><path d="M7.5 16l-1.5 5M11.5 16l-1.5 5M15.5 16l-1.5 5M19 16l-1.5 5"/>',
-    averse: '<path d="M7.5 14a4 4 0 0 1 .4-8 5.2 5.2 0 0 1 9.9 1.4A3.4 3.4 0 0 1 17 14z"/><path d="M9 17l-1.5 4M14 17l-1.5 4"/>',
-    'averse-forte': '<path d="M7.5 13a4 4 0 0 1 .4-8 5.2 5.2 0 0 1 9.9 1.4A3.4 3.4 0 0 1 17 13z"/><path d="M8 16l-2 5.5M12.5 16l-2 5.5M17 16l-2 5.5"/>',
-    orage: '<path d="M7.5 13a4 4 0 0 1 .4-8 5.2 5.2 0 0 1 9.9 1.4A3.4 3.4 0 0 1 17 13z"/><path d="M13 14l-3 4.5h3l-2 4"/>',
-    neige: '<path d="M7.5 14a4 4 0 0 1 .4-8 5.2 5.2 0 0 1 9.9 1.4A3.4 3.4 0 0 1 17 14z"/><path d="M9 18h.01M12.5 20h.01M16 18h.01"/>',
+    soleil:
+      '<g class="p-soleil"><circle cx="12" cy="12" r="4.6"/>'
+      + '<path d="M12 2v2.4M12 19.6V22M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M2 12h2.4M19.6 12H22M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7"/></g>',
+    lune:
+      '<g class="p-lune"><path d="M20 14.6A8.6 8.6 0 1 1 9.4 4a6.9 6.9 0 0 0 10.6 10.6"/></g>',
+    'soleil-voile':
+      '<g class="p-soleil"><circle cx="12" cy="11" r="4"/>'
+      + '<path d="M12 3v1.8M4.9 6.3l1.3 1.3M19.1 6.3l-1.3 1.3M3 11h1.8M19.2 11H21"/></g>'
+      + '<g class="p-voile"><path d="M5 18h14"/></g>',
+    'lune-voile':
+      '<g class="p-lune"><path d="M18 12.4A6.6 6.6 0 1 1 10.6 5a5.3 5.3 0 0 0 7.4 7.4"/></g>'
+      + '<g class="p-voile"><path d="M5 19h14"/></g>',
+    'soleil-nuage':
+      '<g class="p-soleil"><circle cx="9" cy="9" r="3.2"/>'
+      + '<path d="M9 3.4v1.4M4.6 5.6l1 1M3.4 10h1.4"/></g>'
+      + '<g class="p-nuage"><path d="M8.5 19a3.5 3.5 0 0 1 .3-7 4.6 4.6 0 0 1 8.7 1.2A3 3 0 0 1 17 19z"/></g>',
+    'lune-nuage':
+      '<g class="p-lune"><path d="M15.5 9.5A4.5 4.5 0 1 1 10.5 4a3.6 3.6 0 0 0 5 5"/></g>'
+      + '<g class="p-nuage"><path d="M8.5 19a3.5 3.5 0 0 1 .3-7 4.6 4.6 0 0 1 8.7 1.2A3 3 0 0 1 17 19z"/></g>',
+    nuage:
+      '<g class="p-nuage"><path d="M7.5 19a4 4 0 0 1 .4-8 5.2 5.2 0 0 1 9.9 1.4A3.4 3.4 0 0 1 17 19z"/></g>',
+    brume:
+      '<g class="p-brume"><path d="M4 9h16M4 13h16M6 17h12M6 5h12"/></g>',
+    bruine:
+      '<g class="p-nuage"><path d="M7.5 15a4 4 0 0 1 .4-8 5.2 5.2 0 0 1 9.9 1.4A3.4 3.4 0 0 1 17 15z"/></g>'
+      + '<g class="p-pluie"><path d="M9 18v1.5M13 18v2M17 18v1.5"/></g>',
+    pluie:
+      '<g class="p-nuage"><path d="M7.5 14a4 4 0 0 1 .4-8 5.2 5.2 0 0 1 9.9 1.4A3.4 3.4 0 0 1 17 14z"/></g>'
+      + '<g class="p-pluie"><path d="M8.5 17.5l-1 3M12.5 17.5l-1 3M16.5 17.5l-1 3"/></g>',
+    'pluie-forte':
+      '<g class="p-nuage p-nuage--dense"><path d="M7.5 13a4 4 0 0 1 .4-8 5.2 5.2 0 0 1 9.9 1.4A3.4 3.4 0 0 1 17 13z"/></g>'
+      + '<g class="p-pluie"><path d="M7.5 16l-1.5 5M11.5 16l-1.5 5M15.5 16l-1.5 5M19 16l-1.5 5"/></g>',
+    averse:
+      '<g class="p-nuage"><path d="M7.5 14a4 4 0 0 1 .4-8 5.2 5.2 0 0 1 9.9 1.4A3.4 3.4 0 0 1 17 14z"/></g>'
+      + '<g class="p-pluie"><path d="M9 17l-1.5 4M14 17l-1.5 4"/></g>',
+    'averse-forte':
+      '<g class="p-nuage p-nuage--dense"><path d="M7.5 13a4 4 0 0 1 .4-8 5.2 5.2 0 0 1 9.9 1.4A3.4 3.4 0 0 1 17 13z"/></g>'
+      + '<g class="p-pluie"><path d="M8 16l-2 5.5M12.5 16l-2 5.5M17 16l-2 5.5"/></g>',
+    orage:
+      '<g class="p-nuage p-nuage--dense"><path d="M7.5 13a4 4 0 0 1 .4-8 5.2 5.2 0 0 1 9.9 1.4A3.4 3.4 0 0 1 17 13z"/></g>'
+      + '<g class="p-eclair"><path d="M13 14l-3 4.5h3l-2 4"/></g>',
+    neige:
+      '<g class="p-nuage"><path d="M7.5 14a4 4 0 0 1 .4-8 5.2 5.2 0 0 1 9.9 1.4A3.4 3.4 0 0 1 17 14z"/></g>'
+      + '<g class="p-neige"><path d="M9 18h.01M12.5 20h.01M16 18h.01"/></g>',
   };
 
   /**
@@ -2018,9 +2065,115 @@
     });
   }
 
+  /* ------------------------------------------------- lieux de la météo */
+
+  var CLE_LIEU = 'kdl-cyclone-lieu';
+  var communes = null;
+  var chargementCommunes = null;
+
+  /** Liste des communes couvertes, demandée une seule fois par session. */
+  function chargerCommunes() {
+    if (communes) return Promise.resolve(communes);
+    if (chargementCommunes) return chargementCommunes;
+    chargementCommunes = fetch('/api/communes')
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) { communes = d || {}; return communes; })
+      .catch(function () { communes = {}; return communes; });
+    return chargementCommunes;
+  }
+
+  function communesDuTerritoire() {
+    return (communes && communes[cleTerritoire()]) || [];
+  }
+
+  /**
+   * Lieu choisi pour la météo. Il est propre à chaque territoire : passer de
+   * la Guadeloupe à la Martinique ne doit pas conserver « Saint-François ».
+   * L'URL prime, pour qu'un lien partagé ouvre la bonne commune.
+   */
+  function lieuActif() {
+    var demande = null;
+    try { demande = new URLSearchParams(location.search).get('lieu'); } catch (e) { demande = null; }
+    if (demande && communesDuTerritoire().some(function (c) { return c.cle === demande; })) {
+      return demande;
+    }
+    var memorise = null;
+    try { memorise = JSON.parse(localStorage.getItem(CLE_LIEU) || '{}')[cleTerritoire()]; }
+    catch (e) { memorise = null; }
+    if (memorise && communesDuTerritoire().some(function (c) { return c.cle === memorise; })) {
+      return memorise;
+    }
+    return '';                       // vide : l'ensemble du territoire
+  }
+
+  function definirLieu(cle) {
+    try {
+      var tout = JSON.parse(localStorage.getItem(CLE_LIEU) || '{}');
+      if (cle) tout[cleTerritoire()] = cle; else delete tout[cleTerritoire()];
+      localStorage.setItem(CLE_LIEU, JSON.stringify(tout));
+    } catch (e) { /* stockage refusé */ }
+
+    try {
+      var url = new URL(location.href);
+      if (cle) url.searchParams.set('lieu', cle); else url.searchParams.delete('lieu');
+      history.replaceState(history.state, '', url.pathname + url.search);
+    } catch (e) { /* sans History API */ }
+
+    mesurer('lieu_meteo', cle || 'territoire');
+    rendreMeteo();
+  }
+
+  /** Intitulé du lieu consulté : la commune si elle est choisie, sinon l'île. */
+  function nomDuLieu(terr) {
+    var cle = lieuActif();
+    if (!cle) return (terr.article || '') + terr.nom;
+    var trouve = communesDuTerritoire().find(function (c) { return c.cle === cle; });
+    return trouve ? trouve.nom : (terr.article || '') + terr.nom;
+  }
+
+  /**
+   * Choix du lieu. Il vient en tête de la page météo : c'est la première
+   * question qu'on se pose en l'ouvrant — « et chez moi ? ».
+   */
+  function selecteurLieu() {
+    var liste = communesDuTerritoire();
+    var terr = territoireActif();
+    if (!liste.length) return '';
+    var courant = lieuActif();
+
+    return '<label class="territoire lieu-choix" for="choix-lieu">'
+      + '<svg class="territoire__lieu" viewBox="0 0 24 24" aria-hidden="true">'
+      + '<path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11"/><circle cx="12" cy="10" r="2.6"/></svg>'
+      + '<span class="territoire__intitule">Commune</span>'
+      + '<span class="territoire__valeur" aria-hidden="true">'
+      + echapper(courant ? nomDuLieu(terr) : 'Tout le territoire') + '</span>'
+      + '<svg class="territoire__chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>'
+      + '<select id="choix-lieu" aria-label="Commune ou zone pour la météo">'
+      + '<option value=""' + (courant ? '' : ' selected') + '>Tout le territoire</option>'
+      + liste.map(function (c) {
+        return '<option value="' + echapper(c.cle) + '"' + (c.cle === courant ? ' selected' : '') + '>'
+          + echapper(c.nom) + '</option>';
+      }).join('')
+      + '</select></label>';
+  }
+
+  /** Clé de cache d'un bulletin : le territoire seul, ou territoire + lieu. */
+  function cleBulletin() {
+    var lieu = lieuActif();
+    return lieu ? cleTerritoire() + '@' + lieu : cleTerritoire();
+  }
+
+  /**
+   * Bulletin d'un territoire, ou d'une commune précise. La clé porte les deux
+   * cas — « guadeloupe » ou « guadeloupe@saint-francois » — pour que les deux
+   * cohabitent en mémoire sans se marcher dessus.
+   */
   function chargerBulletin(cle) {
     if (bulletins[cle]) return Promise.resolve(bulletins[cle]);
-    return fetch('/api/meteo/' + encodeURIComponent(cle))
+    var partie = String(cle).split('@');
+    var url = '/api/meteo/' + encodeURIComponent(partie[0])
+      + (partie[1] ? '?lieu=' + encodeURIComponent(partie[1]) : '');
+    return fetch(url)
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (b) { if (b) bulletins[cle] = b; return b; })
       .catch(function () { return null; });
@@ -2029,17 +2182,28 @@
   function rendreMeteo() {
     var terr = territoireActif();
     var zone = $('#page-meteo');
-    var b = bulletins[terr.cle];
+
+    // La liste des lieux conditionne le choix courant : sans elle, on ne sait
+    // pas si le lieu mémorisé existe encore.
+    if (!communes) {
+      chargerCommunes().then(function () { if (vueCourante === 'meteo') rendreMeteo(); });
+    }
+
+    var cle = cleBulletin();
+    var b = bulletins[cle];
 
     if (!b) {
-      zone.innerHTML = '<div class="squelette squelette--titre"></div>'
+      zone.innerHTML = selecteurLieu()
+        + '<div class="squelette squelette--titre"></div>'
         + '<div class="squelette squelette--carte"></div>'
         + '<div class="squelette squelette--carte"></div>';
-      chargerBulletin(terr.cle).then(function (recu) {
+      chargerBulletin(cle).then(function (recu) {
         if (!recu) {
-          zone.innerHTML = '<div class="bandeau bandeau--attention">' + ICONES.info
-            + '<div>La météo détaillée n\'est pas disponible pour ' + echapper(terr.nom)
-            + ' en ce moment. La veille cyclonique, elle, fonctionne normalement.</div></div>';
+          zone.innerHTML = selecteurLieu()
+            + '<div class="bandeau bandeau--attention">' + ICONES.info
+            + '<div>La météo détaillée n\'est pas disponible pour '
+            + echapper(nomDuLieu(terr)) + ' en ce moment. '
+            + 'La veille cyclonique, elle, fonctionne normalement.</div></div>';
           return;
         }
         if (vueCourante === 'meteo') rendreMeteo();
@@ -2048,10 +2212,14 @@
     }
 
     var m = b.maintenant;
-    var html = '<h2 style="font-size:1.6rem;margin-bottom:var(--e2)">Météo — '
-      + echapper((terr.article || '') + terr.nom) + '</h2>'
+    var html = selecteurLieu()
+      + '<h2 style="font-size:1.6rem;margin-bottom:var(--e2)">Météo — '
+      + echapper(nomDuLieu(terr)) + '</h2>'
       + '<p style="color:var(--texte-doux);margin-bottom:var(--e5)">'
       + 'Prévisions de modèle, actualisées ' + ilYA(b.recuLe) + '. '
+      + (b.lieu
+        ? 'Relevé au point le plus proche de ' + echapper(b.lieu.nom) + '. '
+        : 'Valeurs pour l\'ensemble du territoire. ')
       + 'Elles ne remplacent pas un bulletin officiel.</p>';
 
     // Conditions actuelles, en évidence. Le fond prend la couleur du ciel réel,
@@ -2961,6 +3129,10 @@
     }
     if (e.target.id === 'choix-territoire') {
       definirTerritoire(e.target.value);
+      return;
+    }
+    if (e.target.id === 'choix-lieu') {
+      definirLieu(e.target.value);
       return;
     }
     var calque = e.target.closest('[data-calque]');

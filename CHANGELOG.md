@@ -4,6 +4,20 @@ Les dates sont celles du déploiement en production. La version installée est
 lisible sur [`/version.json`](https://cyclone.kdl-tech.fr/version.json) et dans
 la page À propos de l'application.
 
+## 0.11.0 — 10 août 2026
+
+- **Météo par commune** : 88 communes et zones proposées, du Moule à
+  Grand-Bourg, de Fort-de-France au Prêcheur, plus les principales villes des
+  sept autres territoires. Les coordonnées viennent du géocodage Open-Meteo
+  (données GeoNames) et sont figées dans le dépôt — écrire une latitude à la
+  main finit par afficher un bulletin correspondant à un point en mer.
+  L'application n'interroge aucun service de géocodage à l'exécution.
+  Le bulletin d'une commune est gardé dix minutes en mémoire : le quota
+  Open-Meteo continue de ne pas dépendre du trafic.
+- **Pictogrammes en couleur** : chaque dessin est composé de couches nommées —
+  soleil, lune, nuage, gouttes, éclair — portant la couleur de ce qu'elles
+  représentent.
+
 ## 0.10.0 — 10 août 2026
 
 **Le bouton de mise à jour restait sans effet.** Cause établie en s'attachant au
