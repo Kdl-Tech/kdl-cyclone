@@ -4,7 +4,7 @@
   "private": true,
   "description": "KDL Cyclone — Veille tropicale pour la Guadeloupe et les Petites Antilles",
   "author": "KDLTech (Guadeloupe)",
-  "license": "MIT",
+  "license": "SEE LICENSE IN LICENSE",
   "type": "module",
   "engines": {
     "node": ">=20"
