@@ -1,0 +1,129 @@
+name: Tests
+
+# Sobre par construction : aucun secret, aucun déploiement, aucun service
+# externe. Le déploiement en production reste manuel, avec sauvegarde vérifiée
+# et rollback — une action automatique contournerait cette procédure.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  controles:
+    name: Tests et contrôles
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+
+      - name: Installer Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Vérifier l'absence de dépendance d'exécution
+        run: |
+          node -e "
+            const p = require('./package.json');
+            const d = Object.keys(p.dependencies || {});
+            if (d.length) {
+              console.error('Dépendance d\'exécution ajoutée :', d.join(', '));
+              console.error('Le projet tient sans, et c\'est un choix structurant.');
+              process.exit(1);
+            }
+            console.log('Aucune dépendance d\'exécution.');
+          "
+
+      - name: Vérifier la syntaxe de chaque script servi au navigateur
+        run: |
+          for f in public/js/*.js public/sw.js; do
+            node --check "$f" || exit 1
+          done
+          echo "Tous les scripts du navigateur sont syntaxiquement valides."
+
+      - name: Tests unitaires
+        run: npm test
+
+      - name: Valider le manifeste de l'application
+        run: |
+          node -e "
+            const fs = require('fs');
+            const m = JSON.parse(fs.readFileSync('public/manifest.webmanifest', 'utf8'));
+            const requis = ['id', 'name', 'short_name', 'start_url', 'scope', 'display',
+                            'theme_color', 'background_color', 'icons'];
+            const manquants = requis.filter((c) => !m[c]);
+            if (manquants.length) {
+              console.error('Champs manquants dans le manifeste :', manquants.join(', '));
+              process.exit(1);
+            }
+            const tailles = m.icons.map((i) => i.sizes);
+            ['192x192', '512x512'].forEach((t) => {
+              if (!tailles.some((s) => String(s).includes(t))) {
+                console.error('Icône manquante :', t);
+                process.exit(1);
+              }
+            });
+            if (!m.icons.some((i) => String(i.purpose || '').includes('maskable'))) {
+              console.error('Aucune icône maskable.');
+              process.exit(1);
+            }
+            console.log('Manifeste complet :', m.name, '—', m.icons.length, 'icônes.');
+          "
+
+      - name: Vérifier que les fichiers référencés existent
+        run: |
+          node -e "
+            const fs = require('fs');
+            const path = require('path');
+            let erreurs = 0;
+            const verifier = (source, motif) => {
+              const texte = fs.readFileSync(source, 'utf8');
+              for (const m of texte.matchAll(motif)) {
+                const cible = m[1].split('?')[0];
+                if (!cible.startsWith('/') || cible.startsWith('//')) continue;
+                if (!fs.existsSync(path.join('public', cible))) {
+                  console.error('Référence morte dans', source, ':', cible);
+                  erreurs += 1;
+                }
+              }
+            };
+            verifier('public/index.html', /(?:src|href)=\"(\/[^\"]+)\"/g);
+            verifier('public/sw.js', /'(\/[^']+)'/g);
+            const m = JSON.parse(fs.readFileSync('public/manifest.webmanifest', 'utf8'));
+            [...m.icons, ...(m.screenshots || [])].forEach((i) => {
+              if (!fs.existsSync(path.join('public', i.src))) {
+                console.error('Fichier absent, référencé par le manifeste :', i.src);
+                erreurs += 1;
+              }
+            });
+            if (erreurs) process.exit(1);
+            console.log('Toutes les références internes pointent vers un fichier existant.');
+          "
+
+      - name: Recherche de secrets
+        run: python3 scripts/audit-secrets.py --historique
+
+      - name: Démarrer le serveur et vérifier qu'il répond
+        run: |
+          node demarrer.mjs &
+          for i in $(seq 1 30); do
+            sleep 2
+            if curl -sf http://127.0.0.1:4240/api/sante > /dev/null; then
+              echo "Serveur en ligne."
+              curl -s http://127.0.0.1:4240/version.json
+              echo
+              curl -sf http://127.0.0.1:4240/ > /dev/null && echo "Page servie."
+              curl -sf http://127.0.0.1:4240/manifest.webmanifest > /dev/null && echo "Manifeste servi."
+              curl -sf http://127.0.0.1:4240/sw.js > /dev/null && echo "Service worker servi."
+              exit 0
+            fi
+          done
+          echo "Le serveur n'a pas répondu dans le temps imparti."
+          exit 1

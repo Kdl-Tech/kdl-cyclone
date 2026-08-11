@@ -1,0 +1,34 @@
+name: Problème d'affichage
+description: Débordement, texte illisible, commande inaccessible
+title: "[Affichage] "
+labels: ["interface"]
+body:
+  - type: textarea
+    id: probleme
+    attributes:
+      label: Ce que vous voyez
+    validations:
+      required: true
+  - type: input
+    id: appareil
+    attributes:
+      label: Appareil et navigateur
+      placeholder: "Redmi Note 12, Chrome Android"
+    validations:
+      required: true
+  - type: input
+    id: largeur
+    attributes:
+      label: Largeur d'écran, si vous la connaissez
+      placeholder: "393 px"
+  - type: dropdown
+    id: theme
+    attributes:
+      label: Thème
+      options: [clair, sombre, les deux]
+    validations:
+      required: true
+  - type: textarea
+    id: capture
+    attributes:
+      label: Capture d'écran

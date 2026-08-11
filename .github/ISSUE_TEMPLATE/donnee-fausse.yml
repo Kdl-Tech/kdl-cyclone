@@ -1,0 +1,56 @@
+name: Donnée fausse ou trompeuse
+description: Une information affichée ne correspond pas à la source officielle
+title: "[Donnée] "
+labels: ["données", "priorité"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        C'est le signalement le plus important du projet. Une application de
+        veille qui affiche une valeur fausse est pire qu'une application
+        absente.
+
+        **Pour une faille de sécurité, n'utilisez pas ce formulaire** : voir
+        `SECURITY.md`.
+  - type: input
+    id: affiche
+    attributes:
+      label: Ce qu'affichait KDL Cyclone
+      placeholder: "Zone surveillée 1 — 60 % à 7 jours"
+    validations:
+      required: true
+  - type: input
+    id: officiel
+    attributes:
+      label: Ce qu'annonçait la source officielle au même moment
+      placeholder: "NHC — 40 % à 7 jours"
+    validations:
+      required: true
+  - type: input
+    id: heure
+    attributes:
+      label: Date et heure de l'observation, avec le fuseau
+      placeholder: "10 août 2026, 14 h 30, heure de Guadeloupe"
+    validations:
+      required: true
+  - type: dropdown
+    id: territoire
+    attributes:
+      label: Territoire sélectionné
+      options:
+        - Guadeloupe
+        - Saint-Martin
+        - Saint-Barthélemy
+        - Martinique
+        - Dominique
+        - Sainte-Lucie
+        - Barbade
+        - Antigua-et-Barbuda
+        - Trinité-et-Tobago
+    validations:
+      required: true
+  - type: textarea
+    id: capture
+    attributes:
+      label: Capture d'écran
+      description: Glissez l'image ici. C'est souvent ce qui permet de trancher.

@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Faille de sécurité
+    url: https://kdl-tech.fr/carte.html
+    about: N'ouvrez jamais d'issue publique pour une faille exploitable — écrivez à KDLTech.
+  - name: Essayer l'application
+    url: https://cyclone.kdl-tech.fr/
+    about: KDL Cyclone en ligne, gratuit et sans compte.
