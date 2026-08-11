@@ -1,11 +1,14 @@
 /**
  * Communes et lieux couverts par la météo locale.
  *
- * Fichier produit par `scripts/build-communes.mjs` à partir du service de
- * géocodage d'Open-Meteo (données GeoNames). Ne pas modifier à la main : une
- * coordonnée saisie de travers donnerait un bulletin qui ne correspond à rien.
+ * Fichier produit par `scripts/build-communes.mjs`. Les territoires français
+ * viennent du découpage administratif officiel (geo.api.gouv.fr), les autres du
+ * géocodage Open-Meteo (données GeoNames), avec contrôle du nom rendu.
  *
- * Produit le 2026-08-11 — 88 lieux.
+ * Ne pas modifier à la main : une coordonnée saisie de travers donnerait un
+ * bulletin qui ne correspond à rien.
+ *
+ * Produit le 2026-08-11 — 99 lieux.
  */
 
 export const COMMUNES = {
@@ -13,444 +16,532 @@ export const COMMUNES = {
     {
       "cle": "anse-bertrand",
       "nom": "Anse-Bertrand",
-      "lat": 16.4724,
-      "lon": -61.5074,
-      "altitude": 17,
-      "population": 5146
+      "lat": 16.4668,
+      "lon": -61.4698,
+      "altitude": null,
+      "population": 4412
     },
     {
       "cle": "baie-mahault",
       "nom": "Baie-Mahault",
-      "lat": 16.2674,
-      "lon": -61.5854,
-      "altitude": 18,
-      "population": 30837
+      "lat": 16.2498,
+      "lon": -61.5951,
+      "altitude": null,
+      "population": 30924
     },
     {
       "cle": "baillif",
       "nom": "Baillif",
-      "lat": 16.0204,
-      "lon": -61.7461,
-      "altitude": 12,
-      "population": 5705
+      "lat": 16.0497,
+      "lon": -61.7158,
+      "altitude": null,
+      "population": 5096
     },
     {
       "cle": "basse-terre",
       "nom": "Basse-Terre",
-      "lat": 15.9971,
-      "lon": -61.7321,
-      "altitude": 11,
-      "population": 11472
+      "lat": 15.9992,
+      "lon": -61.7294,
+      "altitude": null,
+      "population": 9417
+    },
+    {
+      "cle": "bouillante",
+      "nom": "Bouillante",
+      "lat": 16.1387,
+      "lon": -61.7578,
+      "altitude": null,
+      "population": 6127
     },
     {
       "cle": "capesterre-belle-eau",
       "nom": "Capesterre-Belle-Eau",
-      "lat": 16.045,
-      "lon": -61.5642,
-      "altitude": 17,
-      "population": 19821
+      "lat": 16.0486,
+      "lon": -61.6197,
+      "altitude": null,
+      "population": 17684
     },
     {
       "cle": "capesterre-de-marie-galante",
       "nom": "Capesterre-de-Marie-Galante",
-      "lat": 15.8833,
-      "lon": -61.2167,
-      "altitude": 9999,
-      "population": null
+      "lat": 15.9176,
+      "lon": -61.2296,
+      "altitude": null,
+      "population": 3123
     },
     {
       "cle": "deshaies",
       "nom": "Deshaies",
-      "lat": 16.3067,
-      "lon": -61.7943,
-      "altitude": 9,
-      "population": 3792
+      "lat": 16.3194,
+      "lon": -61.7831,
+      "altitude": null,
+      "population": 3710
     },
     {
       "cle": "gourbeyre",
       "nom": "Gourbeyre",
-      "lat": 15.9945,
-      "lon": -61.692,
-      "altitude": 339,
-      "population": 8571
+      "lat": 16.0057,
+      "lon": -61.689,
+      "altitude": null,
+      "population": 7307
     },
     {
       "cle": "goyave",
       "nom": "Goyave",
-      "lat": 16.1352,
-      "lon": -61.5746,
-      "altitude": 24,
-      "population": null
+      "lat": 16.1231,
+      "lon": -61.615,
+      "altitude": null,
+      "population": 7565
     },
     {
       "cle": "grand-bourg",
       "nom": "Grand-Bourg",
-      "lat": 15.884,
-      "lon": -61.3148,
-      "altitude": 7,
-      "population": 5867
+      "lat": 15.9085,
+      "lon": -61.2929,
+      "altitude": null,
+      "population": 4617
     },
     {
       "cle": "la-desirade",
       "nom": "La Désirade",
-      "lat": 16.3167,
-      "lon": -61.0333,
-      "altitude": 9999,
-      "population": null
+      "lat": 16.2972,
+      "lon": -61.0814,
+      "altitude": null,
+      "population": 1306
     },
     {
       "cle": "lamentin",
       "nom": "Lamentin",
-      "lat": 16.2705,
-      "lon": -61.6317,
-      "altitude": 10,
-      "population": 14891
+      "lat": 16.2443,
+      "lon": -61.6695,
+      "altitude": null,
+      "population": 18628
     },
     {
       "cle": "le-gosier",
       "nom": "Le Gosier",
-      "lat": 16.2062,
-      "lon": -61.4931,
-      "altitude": 24,
-      "population": 28698
+      "lat": 16.2274,
+      "lon": -61.4749,
+      "altitude": null,
+      "population": 27757
     },
     {
       "cle": "le-moule",
       "nom": "Le Moule",
-      "lat": 16.3316,
-      "lon": -61.3466,
-      "altitude": 8,
-      "population": 22692
+      "lat": 16.3354,
+      "lon": -61.36,
+      "altitude": null,
+      "population": 23014
     },
     {
       "cle": "les-abymes",
       "nom": "Les Abymes",
-      "lat": 16.273,
-      "lon": -61.5051,
-      "altitude": 20,
-      "population": 53514
+      "lat": 16.2678,
+      "lon": -61.4967,
+      "altitude": null,
+      "population": 51055
     },
     {
       "cle": "morne-a-l-eau",
       "nom": "Morne-à-l'Eau",
-      "lat": 16.3334,
-      "lon": -61.4588,
-      "altitude": 6,
-      "population": null
+      "lat": 16.3212,
+      "lon": -61.4988,
+      "altitude": null,
+      "population": 16228
     },
     {
       "cle": "petit-bourg",
       "nom": "Petit-Bourg",
-      "lat": 16.1916,
-      "lon": -61.5914,
-      "altitude": 7,
-      "population": 24994
+      "lat": 16.1695,
+      "lon": -61.658,
+      "altitude": null,
+      "population": 24665
     },
     {
       "cle": "petit-canal",
       "nom": "Petit-Canal",
-      "lat": 16.3791,
-      "lon": -61.4872,
-      "altitude": 16,
-      "population": 8554
+      "lat": 16.3921,
+      "lon": -61.4547,
+      "altitude": null,
+      "population": 8212
     },
     {
       "cle": "pointe-a-pitre",
       "nom": "Pointe-à-Pitre",
-      "lat": 16.2364,
-      "lon": -61.5346,
-      "altitude": 9999,
-      "population": 15181
+      "lat": 16.2351,
+      "lon": -61.5379,
+      "altitude": null,
+      "population": 15040
     },
     {
       "cle": "pointe-noire",
       "nom": "Pointe-Noire",
-      "lat": 16.2322,
-      "lon": -61.7892,
-      "altitude": 9,
-      "population": 7749
+      "lat": 16.227,
+      "lon": -61.7651,
+      "altitude": null,
+      "population": 5762
     },
     {
       "cle": "port-louis",
       "nom": "Port-Louis",
-      "lat": 16.4175,
-      "lon": -61.5304,
-      "altitude": 6,
-      "population": 5515
+      "lat": 16.4201,
+      "lon": -61.488,
+      "altitude": null,
+      "population": 5607
     },
     {
       "cle": "saint-claude",
       "nom": "Saint-Claude",
-      "lat": 16.0252,
-      "lon": -61.6997,
-      "altitude": 462,
-      "population": 10134
+      "lat": 16.0406,
+      "lon": -61.6953,
+      "altitude": null,
+      "population": 10177
     },
     {
       "cle": "saint-francois",
       "nom": "Saint-François",
-      "lat": 16.2524,
-      "lon": -61.2733,
-      "altitude": 5,
-      "population": 12732
+      "lat": 16.2784,
+      "lon": -61.2539,
+      "altitude": null,
+      "population": 13942
     },
     {
       "cle": "saint-louis",
       "nom": "Saint-Louis",
-      "lat": 15.9548,
-      "lon": -61.3176,
-      "altitude": 6,
-      "population": null
+      "lat": 15.9654,
+      "lon": -61.2732,
+      "altitude": null,
+      "population": 2610
     },
     {
       "cle": "sainte-anne",
       "nom": "Sainte-Anne",
-      "lat": 16.2256,
-      "lon": -61.381,
-      "altitude": 3,
-      "population": 22859
+      "lat": 16.2565,
+      "lon": -61.3896,
+      "altitude": null,
+      "population": 23973
     },
     {
       "cle": "sainte-rose",
       "nom": "Sainte-Rose",
-      "lat": 16.3326,
-      "lon": -61.6969,
-      "altitude": 22,
-      "population": 20192
+      "lat": 16.2937,
+      "lon": -61.6836,
+      "altitude": null,
+      "population": 17700
     },
     {
       "cle": "terre-de-bas",
       "nom": "Terre-de-Bas",
-      "lat": 15.8561,
-      "lon": -61.6348,
-      "altitude": 245,
-      "population": null
+      "lat": 15.8554,
+      "lon": -61.6326,
+      "altitude": null,
+      "population": 873
     },
     {
       "cle": "terre-de-haut",
       "nom": "Terre-de-Haut",
-      "lat": 15.8666,
-      "lon": -61.5826,
-      "altitude": 6,
-      "population": null
+      "lat": 15.8579,
+      "lon": -61.5892,
+      "altitude": null,
+      "population": 1463
     },
     {
       "cle": "trois-rivieres",
       "nom": "Trois-Rivières",
-      "lat": 15.976,
-      "lon": -61.6449,
-      "altitude": 110,
-      "population": 8812
+      "lat": 15.9931,
+      "lon": -61.6493,
+      "altitude": null,
+      "population": 7415
     },
     {
       "cle": "vieux-fort",
       "nom": "Vieux-Fort",
-      "lat": 15.9496,
-      "lon": -61.6993,
-      "altitude": 59,
-      "population": null
+      "lat": 15.9607,
+      "lon": -61.6929,
+      "altitude": null,
+      "population": 1674
     },
     {
       "cle": "vieux-habitants",
       "nom": "Vieux-Habitants",
-      "lat": 16.0587,
-      "lon": -61.7667,
-      "altitude": 7,
-      "population": 7728
-    },
-    {
-      "cle": "bouillante",
-      "nom": "Village",
-      "lat": 16.1301,
-      "lon": -61.7686,
-      "altitude": 9,
-      "population": null
+      "lat": 16.0847,
+      "lon": -61.717,
+      "altitude": null,
+      "population": 7077
     }
   ],
   "martinique": [
     {
       "cle": "basse-pointe",
       "nom": "Basse-Pointe",
-      "lat": 14.8694,
-      "lon": -61.1152,
-      "altitude": 14,
-      "population": 4037
+      "lat": 14.841,
+      "lon": -61.1237,
+      "altitude": null,
+      "population": 2852
     },
     {
-      "cle": "schoelcher",
-      "nom": "Case Navire",
-      "lat": 14.6177,
-      "lon": -61.099,
-      "altitude": 25,
-      "population": null
+      "cle": "bellefontaine",
+      "nom": "Bellefontaine",
+      "lat": 14.6747,
+      "lon": -61.146,
+      "altitude": null,
+      "population": 1746
+    },
+    {
+      "cle": "case-pilote",
+      "nom": "Case-Pilote",
+      "lat": 14.6594,
+      "lon": -61.1297,
+      "altitude": null,
+      "population": 4537
     },
     {
       "cle": "ducos",
       "nom": "Ducos",
-      "lat": 14.5753,
-      "lon": -60.9745,
-      "altitude": 62,
-      "population": 17394
+      "lat": 14.5785,
+      "lon": -60.9685,
+      "altitude": null,
+      "population": 18105
+    },
+    {
+      "cle": "fonds-saint-denis",
+      "nom": "Fonds-Saint-Denis",
+      "lat": 14.7228,
+      "lon": -61.1207,
+      "altitude": null,
+      "population": 640
     },
     {
       "cle": "fort-de-france",
       "nom": "Fort-de-France",
-      "lat": 14.6037,
-      "lon": -61.0742,
-      "altitude": 5,
-      "population": 89995
+      "lat": 14.6492,
+      "lon": -61.0686,
+      "altitude": null,
+      "population": 75506
+    },
+    {
+      "cle": "grand-riviere",
+      "nom": "Grand'Rivière",
+      "lat": 14.847,
+      "lon": -61.1836,
+      "altitude": null,
+      "population": 487
+    },
+    {
+      "cle": "gros-morne",
+      "nom": "Gros-Morne",
+      "lat": 14.7084,
+      "lon": -61.0303,
+      "altitude": null,
+      "population": 9610
+    },
+    {
+      "cle": "l-ajoupa-bouillon",
+      "nom": "L'Ajoupa-Bouillon",
+      "lat": 14.816,
+      "lon": -61.1305,
+      "altitude": null,
+      "population": 1682
     },
     {
       "cle": "la-trinite",
       "nom": "La Trinité",
-      "lat": 14.7381,
-      "lon": -60.9632,
-      "altitude": 6,
-      "population": 15040
+      "lat": 14.7518,
+      "lon": -60.9469,
+      "altitude": null,
+      "population": 11454
     },
     {
       "cle": "le-carbet",
       "nom": "Le Carbet",
-      "lat": 14.7113,
-      "lon": -61.182,
-      "altitude": 21,
-      "population": null
+      "lat": 14.7041,
+      "lon": -61.1583,
+      "altitude": null,
+      "population": 3721
     },
     {
       "cle": "le-diamant",
       "nom": "Le Diamant",
-      "lat": 14.4801,
-      "lon": -61.0254,
-      "altitude": 13,
-      "population": null
+      "lat": 14.4787,
+      "lon": -61.0165,
+      "altitude": null,
+      "population": 6161
     },
     {
       "cle": "le-francois",
       "nom": "Le François",
-      "lat": 14.6151,
-      "lon": -60.9031,
-      "altitude": 14,
-      "population": 19682
+      "lat": 14.6093,
+      "lon": -60.8976,
+      "altitude": null,
+      "population": 15778
     },
     {
       "cle": "le-lamentin",
       "nom": "Le Lamentin",
-      "lat": 14.6134,
-      "lon": -60.9996,
-      "altitude": 10,
-      "population": 40581
+      "lat": 14.6231,
+      "lon": -60.9923,
+      "altitude": null,
+      "population": 39400
     },
     {
       "cle": "le-lorrain",
       "nom": "Le Lorrain",
-      "lat": 14.8326,
-      "lon": -61.0555,
-      "altitude": 13,
-      "population": 8341
+      "lat": 14.7995,
+      "lon": -61.074,
+      "altitude": null,
+      "population": 6566
+    },
+    {
+      "cle": "le-marigot",
+      "nom": "Le Marigot",
+      "lat": 14.7795,
+      "lon": -61.053,
+      "altitude": null,
+      "population": 2948
     },
     {
       "cle": "le-marin",
       "nom": "Le Marin",
-      "lat": 14.4716,
-      "lon": -60.8699,
-      "altitude": 28,
-      "population": 7943
+      "lat": 14.4822,
+      "lon": -60.8589,
+      "altitude": null,
+      "population": 8486
     },
     {
       "cle": "le-morne-rouge",
       "nom": "Le Morne-Rouge",
-      "lat": 14.7761,
-      "lon": -61.1356,
-      "altitude": 459,
-      "population": 5469
+      "lat": 14.7695,
+      "lon": -61.1217,
+      "altitude": null,
+      "population": 4388
+    },
+    {
+      "cle": "le-morne-vert",
+      "nom": "Le Morne-Vert",
+      "lat": 14.7046,
+      "lon": -61.1362,
+      "altitude": null,
+      "population": 1718
     },
     {
       "cle": "le-precheur",
       "nom": "Le Prêcheur",
-      "lat": 14.8011,
-      "lon": -61.2245,
-      "altitude": 17,
-      "population": null
+      "lat": 14.8221,
+      "lon": -61.1963,
+      "altitude": null,
+      "population": 1479
     },
     {
       "cle": "le-robert",
       "nom": "Le Robert",
-      "lat": 14.6775,
-      "lon": -60.9423,
-      "altitude": 8,
-      "population": 23814
+      "lat": 14.6786,
+      "lon": -60.9243,
+      "altitude": null,
+      "population": 21553
     },
     {
       "cle": "le-vauclin",
       "nom": "Le Vauclin",
-      "lat": 14.5454,
-      "lon": -60.8383,
-      "altitude": 8,
-      "population": 7812
+      "lat": 14.542,
+      "lon": -60.8595,
+      "altitude": null,
+      "population": 8483
     },
     {
       "cle": "les-anses-d-arlet",
       "nom": "Les Anses-d'Arlet",
-      "lat": 14.4903,
-      "lon": -61.0794,
-      "altitude": 9,
-      "population": null
+      "lat": 14.4996,
+      "lon": -61.0736,
+      "altitude": null,
+      "population": 3912
     },
     {
       "cle": "les-trois-ilets",
       "nom": "Les Trois-Îlets",
-      "lat": 14.5391,
-      "lon": -61.0335,
-      "altitude": 19,
-      "population": 5657
+      "lat": 14.5329,
+      "lon": -61.0376,
+      "altitude": null,
+      "population": 6507
+    },
+    {
+      "cle": "macouba",
+      "nom": "Macouba",
+      "lat": 14.8474,
+      "lon": -61.1465,
+      "altitude": null,
+      "population": 987
     },
     {
       "cle": "riviere-pilote",
       "nom": "Rivière-Pilote",
-      "lat": 14.4874,
-      "lon": -60.9026,
-      "altitude": 19,
-      "population": 13359
+      "lat": 14.5027,
+      "lon": -60.897,
+      "altitude": null,
+      "population": 11604
+    },
+    {
+      "cle": "riviere-salee",
+      "nom": "Rivière-Salée",
+      "lat": 14.5262,
+      "lon": -60.9623,
+      "altitude": null,
+      "population": 11829
+    },
+    {
+      "cle": "saint-esprit",
+      "nom": "Saint-Esprit",
+      "lat": 14.5617,
+      "lon": -60.9233,
+      "altitude": null,
+      "population": 10322
     },
     {
       "cle": "saint-joseph",
       "nom": "Saint-Joseph",
-      "lat": 14.671,
-      "lon": -61.039,
-      "altitude": 240,
-      "population": 16974
+      "lat": 14.6835,
+      "lon": -61.0407,
+      "altitude": null,
+      "population": 16258
     },
     {
       "cle": "saint-pierre",
       "nom": "Saint-Pierre",
-      "lat": 14.7431,
-      "lon": -61.1754,
-      "altitude": 19,
-      "population": 4125
+      "lat": 14.7717,
+      "lon": -61.1735,
+      "altitude": null,
+      "population": 3961
     },
     {
       "cle": "sainte-anne",
       "nom": "Sainte-Anne",
-      "lat": 14.4345,
-      "lon": -60.8808,
-      "altitude": 14,
-      "population": null
+      "lat": 14.4314,
+      "lon": -60.8516,
+      "altitude": null,
+      "population": 4306
     },
     {
       "cle": "sainte-luce",
       "nom": "Sainte-Luce",
-      "lat": 14.4685,
-      "lon": -60.9214,
-      "altitude": 6,
-      "population": 9196
+      "lat": 14.4904,
+      "lon": -60.9467,
+      "altitude": null,
+      "population": 9410
     },
     {
       "cle": "sainte-marie",
       "nom": "Sainte-Marie",
-      "lat": 14.7835,
-      "lon": -60.9923,
-      "altitude": 14,
-      "population": 20380
+      "lat": 14.773,
+      "lon": -61.0084,
+      "altitude": null,
+      "population": 14756
+    },
+    {
+      "cle": "schoelcher",
+      "nom": "Schœlcher",
+      "lat": 14.6518,
+      "lon": -61.1001,
+      "altitude": null,
+      "population": 19478
     }
   ],
   "saint-martin": [
@@ -657,7 +748,7 @@ export const COMMUNES = {
       "population": 1325
     },
     {
-      "cle": "english-harbour",
+      "cle": "english-harbour-town",
       "nom": "English Harbour Town",
       "lat": 17.0164,
       "lon": -61.7674,
@@ -707,7 +798,7 @@ export const COMMUNES = {
       "population": 19056
     },
     {
-      "cle": "port-of-spain",
+      "cle": "port-d-espagne",
       "nom": "Port-d'Espagne",
       "lat": 10.6667,
       "lon": -61.5189,
@@ -733,7 +824,7 @@ export const COMMUNES = {
   ]
 };
 
-/** Tous les lieux d'un territoire, le chef-lieu en premier. */
+/** Tous les lieux d'un territoire, par ordre alphabétique. */
 export function communesDe(territoire) {
   return COMMUNES[territoire] || [];
 }

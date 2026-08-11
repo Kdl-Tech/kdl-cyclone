@@ -1,10 +1,27 @@
 /**
  * Fabrique la liste des communes et lieux couverts par la météo locale.
  *
- * Les coordonnées ne sont pas écrites à la main : elles viennent du service de
- * géocodage d'Open-Meteo, qui s'appuie sur GeoNames. Inventer une latitude
- * serait la pire des erreurs pour une application météo — on afficherait un
- * bulletin qui ne correspond à rien.
+ * Deux sources, choisies selon le territoire :
+ *
+ *   1. **geo.api.gouv.fr** pour la Guadeloupe et la Martinique — le découpage
+ *      administratif officiel de l'État. Gratuit, sans clé, exhaustif : les 32
+ *      communes de Guadeloupe et les 34 de Martinique, ni une de plus, ni une
+ *      de moins, avec leur centre géographique et leur population légale.
+ *
+ *   2. **Open-Meteo / GeoNames** pour les îles indépendantes et les quartiers
+ *      des collectivités du Nord, que l'API française ne découpe pas.
+ *
+ * Pourquoi deux sources : GeoNames enregistre certains chefs-lieux sous le nom
+ * de leur quartier. Une recherche de « Bouillante » y renvoie « Village », et
+ * « Schoelcher » renvoie « Case Navire » — des noms de lieux-dits qui ne
+ * correspondent à aucune commune. La première version de ce script prenait le
+ * résultat le plus peuplé sans vérifier le nom : l'application proposait donc
+ * une commune « Village » qui n'existe pas, et il manquait Bouillante.
+ *
+ * D'où la règle qui gouverne désormais tout ce fichier : **un résultat dont le
+ * nom ne correspond pas à ce qui était demandé est rejeté**, et l'absence est
+ * signalée en fin d'exécution plutôt que comblée par un à-peu-près. Pour une
+ * application météo, une commune inventée est pire qu'une commune manquante.
  *
  * Le résultat est un fichier statique, `src/communes.js` : à l'exécution,
  * l'application n'interroge aucun service de géocodage.
@@ -18,37 +35,28 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { ROOT } from '../src/config.js';
 
-const BASE = 'https://geocoding-api.open-meteo.com/v1/search';
+const GEO_FR = 'https://geo.api.gouv.fr/communes';
+const GEO_MONDE = 'https://geocoding-api.open-meteo.com/v1/search';
+
+/** Territoires français : le département suffit, l'État fournit la liste. */
+const DEPARTEMENTS = [
+  { territoire: 'guadeloupe', departement: '971', attendu: 32 },
+  { territoire: 'martinique', departement: '972', attendu: 34 },
+];
 
 /**
- * Ce qu'on cherche, territoire par territoire.
+ * Le reste du monde, nom par nom.
  *
- * `pays` est le code ISO attendu : il évite de ramener la commune homonyme
- * d'un autre pays — « Les Abymes » existe aussi en Martinique, « Saint-Pierre »
- * dans plusieurs îles.
+ * `pays` est le code ISO attendu : il écarte l'homonyme d'un autre pays —
+ * « Marigot » existe en Dominique comme à Saint-Martin, « Saint-Pierre » dans
+ * plusieurs îles.
  */
 const RECHERCHES = [
-  { territoire: 'guadeloupe', pays: 'GP', noms: [
-    'Les Abymes', 'Pointe-à-Pitre', 'Baie-Mahault', 'Le Gosier', 'Petit-Bourg',
-    'Sainte-Anne', 'Le Moule', 'Saint-François', 'Basse-Terre', 'Gourbeyre',
-    'Trois-Rivières', 'Capesterre-Belle-Eau', 'Bouillante', 'Deshaies',
-    'Sainte-Rose', 'Lamentin', 'Morne-à-l\'Eau', 'Port-Louis', 'Anse-Bertrand',
-    'Petit-Canal', 'Saint-Claude', 'Vieux-Habitants', 'Pointe-Noire',
-    'Baillif', 'Vieux-Fort', 'Goyave', 'Saint-Louis', 'Grand-Bourg',
-    'Capesterre-de-Marie-Galante', 'Terre-de-Haut', 'Terre-de-Bas', 'La Désirade',
-  ] },
-  { territoire: 'martinique', pays: 'MQ', noms: [
-    'Fort-de-France', 'Le Lamentin', 'Le Robert', 'Sainte-Marie', 'Le François',
-    'Schoelcher', 'Ducos', 'Saint-Joseph', 'La Trinité', 'Rivière-Pilote',
-    'Le Marin', 'Sainte-Anne', 'Sainte-Luce', 'Les Trois-Îlets', 'Le Diamant',
-    'Saint-Pierre', 'Le Carbet', 'Le Prêcheur', 'Grand-Rivière', 'Le Lorrain',
-    'Basse-Pointe', 'Le Vauclin', 'Le Morne-Rouge', 'Les Anses-d\'Arlet',
-  ] },
   { territoire: 'saint-martin', pays: 'MF', noms: [
-    'Marigot', 'Grand-Case', 'Quartier d\'Orléans', 'Terres Basses',
+    'Marigot', 'Grand-Case', 'Terres Basses', 'Quartier d\'Orléans',
   ] },
   { territoire: 'saint-barthelemy', pays: 'BL', noms: [
-    'Gustavia', 'Saint-Jean', 'Lorient', 'Corossol',
+    'Gustavia', 'Corossol', 'Saint-Jean', 'Lorient',
   ] },
   { territoire: 'dominique', pays: 'DM', noms: [
     'Roseau', 'Portsmouth', 'Marigot', 'Berekua', 'Saint Joseph', 'Castle Bruce',
@@ -60,61 +68,122 @@ const RECHERCHES = [
     'Bridgetown', 'Speightstown', 'Oistins', 'Holetown', 'Bathsheba',
   ] },
   { territoire: 'antigua', pays: 'AG', noms: [
-    "Saint John's", 'All Saints', 'Liberta', 'Codrington', 'English Harbour',
+    'Saint John\'s', 'All Saints', 'Liberta', 'Codrington', 'English Harbour',
   ] },
+  // La capitale de Trinité est enregistrée sous son nom français : la chercher
+  // en anglais donne un résultat que le contrôle de nom rejette, à juste titre.
   { territoire: 'trinite-tobago', pays: 'TT', noms: [
-    'Port of Spain', 'San Fernando', 'Chaguanas', 'Arima', 'Scarborough',
+    'Port-d\'Espagne', 'San Fernando', 'Chaguanas', 'Arima', 'Scarborough',
     'Point Fortin',
   ] },
 ];
 
 const attendre = (ms) => new Promise((r) => setTimeout(r, ms));
 
-async function chercher(nom, pays) {
-  const url = `${BASE}?name=${encodeURIComponent(nom)}&count=10&language=fr&format=json`;
-  const reponse = await fetch(url, { headers: { 'User-Agent': 'KDL-Cyclone/build-communes' } });
-  if (!reponse.ok) throw new Error(`géocodage ${reponse.status} pour ${nom}`);
-  const donnees = await reponse.json();
-  const candidats = (donnees.results || []).filter((r) => r.country_code === pays);
-  if (!candidats.length) return null;
-  // Le plus peuplé d'abord : entre deux homonymes du même pays, c'est celui
-  // que l'utilisateur avait en tête.
-  candidats.sort((a, b) => (b.population || 0) - (a.population || 0));
-  const r = candidats[0];
-  return {
-    nom: r.name,
-    lat: Math.round(r.latitude * 10000) / 10000,
-    lon: Math.round(r.longitude * 10000) / 10000,
-    altitude: r.elevation ?? null,
-    population: r.population ?? null,
-  };
+/**
+ * Forme comparable d'un nom de lieu : sans accents, sans articles, sans
+ * ponctuation. « Le Moule » et « Moule » doivent se reconnaître, « Schœlcher »
+ * et « Schoelcher » aussi.
+ */
+function aplati(nom) {
+  return String(nom || '')
+    .replace(/œ/gi, 'oe').replace(/æ/gi, 'ae')
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/^(le|la|les|l')\s*/, '')
+    .replace(/[''`-]/g, ' ')
+    .replace(/[^a-z0-9 ]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/** Le nom rendu par le service est-il bien celui qu'on cherchait ? */
+function correspond(demande, rendu) {
+  const a = aplati(demande);
+  const b = aplati(rendu);
+  if (!a || !b) return false;
+  return a === b || b.startsWith(a) || a.startsWith(b);
 }
 
 function slug(nom) {
-  return nom.normalize('NFD').replace(/[̀-ͯ]/g, '')
-    .toLowerCase().replace(/['’\s]+/g, '-').replace(/[^a-z0-9-]/g, '');
+  return String(nom)
+    .replace(/œ/gi, 'oe')
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .toLowerCase().replace(/[''\s]+/g, '-').replace(/[^a-z0-9-]/g, '');
+}
+
+/** Communes d'un département français, d'après le découpage officiel. */
+async function communesFrancaises(departement) {
+  const url = `${GEO_FR}?codeDepartement=${departement}&fields=nom,centre,population&format=json`;
+  const reponse = await fetch(url, { headers: { 'User-Agent': 'KDL-Cyclone/build-communes' } });
+  if (!reponse.ok) throw new Error(`geo.api.gouv.fr ${reponse.status} pour ${departement}`);
+  const donnees = await reponse.json();
+  return donnees
+    .filter((c) => c.centre && Array.isArray(c.centre.coordinates))
+    .map((c) => ({
+      cle: slug(c.nom),
+      nom: c.nom,
+      lat: Math.round(c.centre.coordinates[1] * 10000) / 10000,
+      lon: Math.round(c.centre.coordinates[0] * 10000) / 10000,
+      altitude: null,
+      population: c.population ?? null,
+    }));
+}
+
+/** Un lieu du reste du monde, refusé si le nom rendu ne correspond pas. */
+async function lieuMondial(nom, pays) {
+  const url = `${GEO_MONDE}?name=${encodeURIComponent(nom)}&count=10&language=fr&format=json`;
+  const reponse = await fetch(url, { headers: { 'User-Agent': 'KDL-Cyclone/build-communes' } });
+  if (!reponse.ok) throw new Error(`géocodage ${reponse.status} pour ${nom}`);
+  const donnees = await reponse.json();
+  const dansLePays = (donnees.results || []).filter((r) => r.country_code === pays);
+
+  // Le contrôle qui manquait : on n'accepte que ce qui porte bien le nom
+  // demandé. Un lieu-dit renvoyé à la place du chef-lieu est écarté.
+  const valides = dansLePays.filter((r) => correspond(nom, r.name));
+  if (!valides.length) {
+    const vus = dansLePays.map((r) => r.name).join(', ');
+    return { erreur: vus ? `nom non concordant (reçu : ${vus})` : 'aucun résultat' };
+  }
+
+  valides.sort((a, b) => (b.population || 0) - (a.population || 0));
+  const r = valides[0];
+  return {
+    lieu: {
+      cle: slug(r.name),
+      nom: r.name,
+      lat: Math.round(r.latitude * 10000) / 10000,
+      lon: Math.round(r.longitude * 10000) / 10000,
+      altitude: r.elevation ?? null,
+      population: r.population ?? null,
+    },
+  };
 }
 
 const communes = {};
+const manquants = [];
 let trouves = 0;
-let manquants = [];
+
+for (const bloc of DEPARTEMENTS) {
+  const liste = await communesFrancaises(bloc.departement);
+  liste.sort((a, b) => a.nom.localeCompare(b.nom, 'fr'));
+  communes[bloc.territoire] = liste;
+  trouves += liste.length;
+  const compte = liste.length === bloc.attendu ? '' : `  ⚠ attendu ${bloc.attendu}`;
+  console.log(`  ${bloc.territoire.padEnd(18)} ${liste.length} communes (source officielle)${compte}`);
+}
 
 for (const bloc of RECHERCHES) {
   communes[bloc.territoire] = [];
   for (const nom of bloc.noms) {
     try {
-      const lieu = await chercher(nom, bloc.pays);
-      if (!lieu) {
-        manquants.push(`${nom} (${bloc.pays})`);
-      } else {
-        communes[bloc.territoire].push({ cle: slug(nom), ...lieu });
-        trouves += 1;
-      }
-    } catch (erreur) {
-      manquants.push(`${nom} (${bloc.pays}) — ${erreur.message}`);
+      const { lieu, erreur } = await lieuMondial(nom, bloc.pays);
+      if (lieu) { communes[bloc.territoire].push(lieu); trouves += 1; }
+      else manquants.push(`${nom} (${bloc.pays}) — ${erreur}`);
+    } catch (e) {
+      manquants.push(`${nom} (${bloc.pays}) — ${e.message}`);
     }
-    // Le service est gratuit et sans clé : on ne le brusque pas.
-    await attendre(350);
+    await attendre(350);            // service gratuit et sans clé : on y va doucement
   }
   communes[bloc.territoire].sort((a, b) => a.nom.localeCompare(b.nom, 'fr'));
   console.log(`  ${bloc.territoire.padEnd(18)} ${communes[bloc.territoire].length} lieux`);
@@ -123,16 +192,19 @@ for (const bloc of RECHERCHES) {
 const fichier = `/**
  * Communes et lieux couverts par la météo locale.
  *
- * Fichier produit par \`scripts/build-communes.mjs\` à partir du service de
- * géocodage d'Open-Meteo (données GeoNames). Ne pas modifier à la main : une
- * coordonnée saisie de travers donnerait un bulletin qui ne correspond à rien.
+ * Fichier produit par \`scripts/build-communes.mjs\`. Les territoires français
+ * viennent du découpage administratif officiel (geo.api.gouv.fr), les autres du
+ * géocodage Open-Meteo (données GeoNames), avec contrôle du nom rendu.
+ *
+ * Ne pas modifier à la main : une coordonnée saisie de travers donnerait un
+ * bulletin qui ne correspond à rien.
  *
  * Produit le ${new Date().toISOString().slice(0, 10)} — ${trouves} lieux.
  */
 
 export const COMMUNES = ${JSON.stringify(communes, null, 2)};
 
-/** Tous les lieux d'un territoire, le chef-lieu en premier. */
+/** Tous les lieux d'un territoire, par ordre alphabétique. */
 export function communesDe(territoire) {
   return COMMUNES[territoire] || [];
 }
@@ -146,6 +218,6 @@ export function communePar(territoire, cle) {
 await fs.writeFile(path.join(ROOT, 'src', 'communes.js'), fichier);
 console.log(`\n${trouves} lieux écrits dans src/communes.js`);
 if (manquants.length) {
-  console.log(`\n${manquants.length} introuvables — à vérifier :`);
+  console.log(`\n${manquants.length} écartés — aucun n'a été remplacé par un à-peu-près :`);
   manquants.forEach((m) => console.log('  ·', m));
 }

@@ -7,7 +7,23 @@ Vérification effectuée le **9 août 2026**.
 
 ---
 
-## 0. Géocodage Open-Meteo — utilisé hors ligne uniquement
+## 0. Communes et lieux — deux sources, utilisées hors ligne uniquement
+
+### 0.1 Découpage administratif officiel (territoires français)
+
+| | |
+|---|---|
+| Service | https://geo.api.gouv.fr/communes |
+| Données | Découpage administratif de l'État français |
+| Clé d'accès | Aucune |
+| Coût | 0 € |
+| Usage | **À la fabrication seulement** : `scripts/build-communes.mjs` |
+
+Les **32 communes de Guadeloupe** et les **34 de Martinique** viennent de là,
+avec leur centre géographique et leur population légale. Liste exhaustive et
+exacte, ni une commune de plus, ni une de moins.
+
+### 0.2 Géocodage Open-Meteo (îles indépendantes)
 
 | | |
 |---|---|
@@ -17,13 +33,31 @@ Vérification effectuée le **9 août 2026**.
 | Coût | 0 € |
 | Usage | **À la fabrication seulement** : `scripts/build-communes.mjs` |
 
-Les 88 communes et zones proposées dans l'onglet météo ont leurs coordonnées
-issues de ce service, figées dans `src/communes.js`. **L'application ne
-l'interroge jamais à l'exécution** : la liste est statique, et aucun nom saisi
-par un visiteur n'est envoyé où que ce soit.
+Pour la Dominique, Sainte-Lucie, la Barbade, Antigua-et-Barbuda, Trinité-et-Tobago
+et les quartiers des collectivités du Nord, que l'API française ne découpe pas.
 
-Ce choix est délibéré : écrire des latitudes à la main aurait fini par produire
-un bulletin correspondant à un point situé en mer, ou dans l'île voisine.
+### Pourquoi deux sources
+
+GeoNames enregistre certains chefs-lieux sous le nom d'un de leurs quartiers :
+une recherche de « Bouillante » y renvoie « Village », « Schoelcher » renvoie
+« Case Navire ». La première version du script retenait le résultat le plus
+peuplé sans vérifier le nom — l'application a donc proposé pendant un temps une
+commune « Village » qui n'existe pas, tandis que Bouillante et Schœlcher
+manquaient.
+
+D'où la règle appliquée depuis : **un résultat dont le nom ne correspond pas à
+ce qui était demandé est rejeté**, et l'absence est signalée en fin d'exécution
+plutôt que comblée par un à-peu-près. Pour une application météo, une commune
+inventée est pire qu'une commune manquante.
+
+Trois lieux sont écartés en connaissance de cause, faute de figurer dans les
+sources : Quartier d'Orléans (Saint-Martin), Saint-Jean et Lorient
+(Saint-Barthélemy) — ce sont des quartiers, pas des communes.
+
+**L'application n'interroge aucun de ces services à l'exécution** : la liste est
+statique dans `src/communes.js`, et aucun nom saisi par un visiteur n'est envoyé
+où que ce soit. Écrire des latitudes à la main aurait fini par produire un
+bulletin correspondant à un point situé en mer, ou dans l'île voisine.
 
 Relancer `node scripts/build-communes.mjs` uniquement si la liste des
 territoires change.

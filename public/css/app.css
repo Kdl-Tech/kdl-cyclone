@@ -84,6 +84,7 @@
   --cyan: #04708a;
   --cyan-vif: #14b3d4;
   --cyan-voile: rgba(20, 179, 212, 0.12);
+  --voile-modal: rgba(9, 16, 24, 0.55);
 
   /* --------------------------------------------- échelle de risque
      Quatre crans, du calme au danger. Cette échelle ne sert QUE d'échelle :
@@ -195,6 +196,7 @@
   --cyan: #35d0ee;
   --cyan-vif: #6fe0f7;
   --cyan-voile: rgba(53, 208, 238, 0.15);
+  --voile-modal: rgba(2, 8, 14, 0.72);
 
   --n0: #34d399; --n1: #fbbf24; --n2: #fb923c; --n3: #f87171;
   --n0-vif: #5eead4; --n1-vif: #fcd34d; --n2-vif: #fdba74; --n3-vif: #fca5a5;
@@ -2404,15 +2406,201 @@ button { font: inherit; color: inherit; }
 .meteo-actuel__picto .picto .p-eclair { stroke: #fde047; }
 .meteo-actuel__picto .picto .p-eclair path { fill: rgba(253, 224, 71, 0.6); }
 
-/* Choix de la commune, en tête de la page météo : c'est la première question
-   qu'on se pose en l'ouvrant — « et chez moi ? ». */
-.lieu-choix {
-  display: inline-flex;
+/* ── Chercheur de commune ────────────────────────────────────────────────────
+   « Et chez moi ? » est la première question qu'on se pose en ouvrant la météo.
+   Ce bouton est donc l'action principale de la page, et non un second sélecteur
+   de territoire : il porte le nom du lieu en clair, une loupe qui annonce la
+   recherche, et un liseré cyan à gauche qui le distingue au premier coup d'œil
+   du bandeau de territoire posé juste au-dessus. */
+.chercheur {
+  display: flex;
+  align-items: center;
+  gap: var(--e3);
+  width: 100%;
+  min-height: 56px;
   margin-bottom: var(--e5);
-  max-width: 100%;
+  padding: var(--e2) var(--e3);
+  border: 1px solid var(--bordure-forte);
+  border-left: 3px solid var(--cyan);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  box-shadow: var(--ombre-1);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  transition: border-color var(--t-rapide), background var(--t-rapide),
+              box-shadow var(--t-rapide);
 }
-.lieu-choix .territoire__valeur { max-width: min(48vw, 260px); }
-@media (max-width: 520px) {
-  .lieu-choix { display: flex; width: 100%; }
-  .lieu-choix .territoire__valeur { max-width: none; }
+.chercheur:hover { background: var(--cyan-voile); box-shadow: var(--ombre-2); }
+.chercheur:active { transform: translateY(1px); }
+.chercheur:focus-visible {
+  outline: none;
+  border-color: var(--cyan);
+  box-shadow: var(--halo-cyan);
+}
+
+.chercheur__epingle {
+  width: 22px; height: 22px; flex: none;
+  fill: none; stroke: var(--cyan); stroke-width: 1.8;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+.chercheur__texte { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.chercheur__intitule {
+  /* 0,7 rem = 11,2 px : le plancher de lisibilité de l'application est à 11 px,
+     et 0,68 rem tombait juste en dessous. */
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--texte-faible);
+}
+/* Le nom du lieu porte l'information : il se lit, il ne se devine pas. */
+.chercheur__valeur {
+  font-size: 1.06rem;
+  font-weight: 650;
+  line-height: 1.2;
+  color: var(--texte);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Tant qu'aucune commune n'est choisie, le bouton invite au lieu de constater. */
+.chercheur--vide .chercheur__valeur { color: var(--cyan); }
+.chercheur__loupe {
+  width: 20px; height: 20px; flex: none;
+  fill: none; stroke: var(--texte-doux); stroke-width: 2;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+.chercheur:hover .chercheur__loupe { stroke: var(--cyan); }
+
+/* Le panneau couvre l'écran sur téléphone — chercher demande de la place et de
+   la concentration — et se pose en carte flottante à partir de la tablette. */
+.chercheur-panneau {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  background: var(--fond);
+}
+.chercheur-panneau[hidden] { display: none; }
+body.chercheur-ouvert { overflow: hidden; }
+
+.chercheur-panneau__tete {
+  display: flex;
+  align-items: center;
+  gap: var(--e2);
+  flex: none;
+  padding: var(--e3);
+  border-bottom: 1px solid var(--bordure);
+  background: var(--surface);
+}
+.chercheur-panneau__loupe {
+  width: 20px; height: 20px; flex: none;
+  fill: none; stroke: var(--texte-doux); stroke-width: 2;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+#recherche-lieu {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-size: 1.06rem;
+  color: var(--texte);
+}
+#recherche-lieu:focus { outline: none; }
+#recherche-lieu::placeholder { color: var(--texte-faible); }
+/* La croix native du champ de recherche varie d'un moteur à l'autre : on garde
+   la nôtre, qui fait 44 px et ferme le panneau entier. */
+#recherche-lieu::-webkit-search-cancel-button { display: none; }
+
+.chercheur-panneau__fermer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px; height: 44px;
+  flex: none;
+  border: 1px solid var(--bordure);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  cursor: pointer;
+}
+.chercheur-panneau__fermer svg {
+  width: 18px; height: 18px;
+  fill: none; stroke: var(--texte-doux); stroke-width: 2; stroke-linecap: round;
+}
+.chercheur-panneau__fermer:hover { border-color: var(--cyan); }
+.chercheur-panneau__fermer:hover svg { stroke: var(--cyan); }
+.chercheur-panneau__fermer:focus-visible { outline: none; box-shadow: var(--halo-cyan); }
+
+.chercheur-liste {
+  flex: 1;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  -webkit-overflow-scrolling: touch;
+}
+.chercheur-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--e3);
+  min-height: 52px;
+  padding: var(--e3) var(--e4);
+  border-bottom: 1px solid var(--bordure);
+  cursor: pointer;
+}
+.chercheur-item:hover, .chercheur-item:focus {
+  outline: none;
+  background: var(--cyan-voile);
+}
+.chercheur-item__nom { font-size: 1rem; font-weight: 550; color: var(--texte); }
+.chercheur-item__note { font-size: 0.8rem; color: var(--texte-faible); flex: none; }
+/* Le lieu courant se repère sans lire : un liseré, pas seulement une couleur. */
+.chercheur-item.est-choisi {
+  border-left: 3px solid var(--cyan);
+  background: var(--cyan-voile);
+}
+.chercheur-item.est-choisi .chercheur-item__nom { font-weight: 700; color: var(--cyan); }
+.chercheur-vide {
+  padding: var(--e6) var(--e4);
+  text-align: center;
+  color: var(--texte-faible);
+  line-height: 1.6;
+}
+
+@media (min-width: 620px) {
+  .chercheur { max-width: 460px; }
+  .chercheur-panneau {
+    inset: 0;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 8vh var(--e4) var(--e4);
+    background: var(--voile-modal);
+  }
+  .chercheur-panneau__tete,
+  .chercheur-liste {
+    width: 100%;
+    max-width: 520px;
+    background: var(--surface);
+  }
+  .chercheur-panneau__tete {
+    border-radius: var(--r-md) var(--r-md) 0 0;
+    box-shadow: var(--ombre-2);
+  }
+  .chercheur-liste {
+    flex: 0 1 auto;
+    max-height: 60vh;
+    border-radius: 0 0 var(--r-md) var(--r-md);
+    box-shadow: var(--ombre-2);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chercheur { transition: none; }
+  .chercheur:active { transform: none; }
 }

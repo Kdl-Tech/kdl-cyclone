@@ -4,6 +4,28 @@ Les dates sont celles du déploiement en production. La version installée est
 lisible sur [`/version.json`](https://cyclone.kdl-tech.fr/version.json) et dans
 la page À propos de l'application.
 
+## 0.12.0 — 10 août 2026
+
+**Les appareils restés sur une ancienne version ne pouvaient plus en sortir.**
+Le service worker attendait l'accord de la page avant de se remplacer — une
+précaution qui se retournait contre son but : la page qui devait donner cet
+accord venait elle-même du cache périmé, donc son bouton de mise à jour était
+celui d'avant le correctif. Le remplacement dépendait du code qu'il fallait
+justement remplacer. Une version neuve prend désormais la main dès son
+installation : pour une application de veille cyclonique, la fraîcheur passe
+avant le confort.
+
+- **Recherche de commune** : le choix du lieu n'est plus un second menu
+  déroulant sous celui du territoire — deux bandeaux jumeaux qu'on ne
+  distinguait pas. C'est maintenant l'action principale de la page météo, avec
+  le nom du lieu en clair et un panneau de recherche : « francois » trouve
+  Saint-François, « ste anne » trouve Sainte-Anne, accents et tirets sont
+  ignorés. Navigation au clavier, fermeture par Échap.
+- **Un lien partagé retrouve enfin sa commune.** L'adresse était réécrite à
+  chaque changement de page en ne gardant que le territoire, et le paramètre
+  `lieu` disparaissait avant même d'avoir pu être lu — la liste des communes
+  arrive par le réseau, donc au premier rendu rien ne permettait de le valider.
+
 ## 0.11.0 — 10 août 2026
 
 - **Météo par commune** : 88 communes et zones proposées, du Moule à

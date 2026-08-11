@@ -7,7 +7,7 @@
 **Veille des ondes tropicales et des systèmes cycloniques dans l'Atlantique**
 *Tropical wave and cyclone tracking for the Atlantic*
 
-[![version](https://img.shields.io/badge/version-0.11.0-1567a8)](CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-0.12.0-1567a8)](CHANGELOG.md)
 [![tests](https://github.com/Kdl-Tech/kdl-cyclone/actions/workflows/tests.yml/badge.svg)](https://github.com/Kdl-Tech/kdl-cyclone/actions/workflows/tests.yml)
 [![PWA](https://img.shields.io/badge/PWA-installable-0d9488)](https://cyclone.kdl-tech.fr/)
 [![dépendances](https://img.shields.io/badge/d%C3%A9pendances-0-17a86a)](package.json)
@@ -87,9 +87,12 @@ partout une étiquette violette, une barre hachurée et la mention
   Dominique, Sainte-Lucie, Barbade, Antigua-et-Barbuda, Trinité-et-Tobago.
   Chacun avec **ses** autorités : Météo-France ne couvre pas les îles
   indépendantes, et l'application ne fait jamais semblant du contraire.
-- **Météo locale, à la commune** — 88 communes et zones : conditions du moment,
-  courbe horaire, dix jours, mer, houle, UV, qualité de l'air et brume de
-  sable. Le lieu choisi tient dans l'URL, donc dans un lien partagé.
+- **Météo locale, à la commune** — 99 communes et zones, cherchables au clavier :
+  les 32 communes de Guadeloupe et les 34 de Martinique d'après le découpage
+  administratif officiel, plus les principales villes des sept autres
+  territoires. Conditions du moment, courbe horaire, dix jours, mer, houle, UV,
+  qualité de l'air et brume de sable. Le lieu choisi tient dans l'URL, donc dans
+  un lien partagé.
 - **Mode préparation** — liste de vérification qui fonctionne sans connexion.
 - **Hors connexion** — le dernier état connu reste consultable, clairement daté.
 
@@ -155,6 +158,7 @@ Détail complet, licences et fréquences : [`docs/SOURCES.md`](docs/SOURCES.md).
 | [NHC / NOAA](https://www.nhc.noaa.gov/) | Zones surveillées, probabilités, cônes, trajectoires | Domaine public |
 | [GOES-19 / NOAA NESDIS](https://www.star.nesdis.noaa.gov/goes/) | Boucle satellite | Domaine public |
 | [Open-Meteo](https://open-meteo.com/) | Météo, mer, qualité de l'air | CC BY 4.0 |
+| [geo.api.gouv.fr](https://geo.api.gouv.fr/) | Communes de Guadeloupe et Martinique | Données publiques |
 | [Natural Earth](https://www.naturalearthdata.com/) | Fond de carte | Domaine public |
 | [Météo-France](https://vigilance.meteofrance.fr/) | Lien vers les vigilances officielles | Lien uniquement, aucune donnée reprise |
 

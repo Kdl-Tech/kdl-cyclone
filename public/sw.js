@@ -47,9 +47,19 @@ var COQUILLE = [
 ];
 
 self.addEventListener('install', function (e) {
-  // Pas de skipWaiting automatique : une nouvelle version ne doit jamais
-  // remplacer l'ancienne pendant que quelqu'un lit une information de sécurité.
-  // Elle attend en coulisse que l'utilisateur accepte la mise à jour.
+  // Cette version prend la main dès qu'elle est installée, sans rien demander
+  // à la page.
+  //
+  // La règle inverse — attendre l'accord de l'utilisateur — semblait plus
+  // respectueuse, et elle a produit exactement le contraire : un appareil resté
+  // sur une ancienne version ne pouvait plus en sortir. La page qui aurait dû
+  // réveiller le service worker en attente venait elle-même du cache périmé,
+  // donc son bouton de mise à jour était celui d'avant le correctif. Le
+  // remplacement dépendait du code qu'il fallait justement remplacer.
+  //
+  // Pour une application de veille cyclonique, rester figé sur une version
+  // dépassée est le pire des risques : la fraîcheur passe avant le confort.
+  self.skipWaiting();
   e.waitUntil(caches.open(CACHE_COQUILLE).then(function (c) { return c.addAll(COQUILLE); }));
 });
 

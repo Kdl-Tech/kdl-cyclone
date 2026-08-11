@@ -2071,6 +2071,22 @@
   var communes = null;
   var chargementCommunes = null;
 
+  /**
+   * Le lieu réclamé par l'adresse d'ouverture, retenu avant que quoi que ce
+   * soit ne réécrive l'URL.
+   *
+   * Sans cette copie, un lien partagé perdait sa commune : la liste des
+   * communes arrive par le réseau, donc au premier rendu on ne pouvait pas
+   * valider « deshaies » — on le rejetait, et la navigation réécrivait aussitôt
+   * l'adresse sans le paramètre. Le lieu était perdu avant même d'avoir pu être
+   * reconnu. On fait donc crédit à l'URL jusqu'à ce que la liste permette de
+   * trancher.
+   */
+  var lieuDemande = (function () {
+    try { return new URLSearchParams(location.search).get('lieu') || ''; }
+    catch (e) { return ''; }
+  })();
+
   /** Liste des communes couvertes, demandée une seule fois par session. */
   function chargerCommunes() {
     if (communes) return Promise.resolve(communes);
@@ -2094,9 +2110,17 @@
   function lieuActif() {
     var demande = null;
     try { demande = new URLSearchParams(location.search).get('lieu'); } catch (e) { demande = null; }
+    if (!demande) demande = lieuDemande;
+
+    // Tant que la liste n'est pas arrivée, on fait crédit à l'adresse : c'est
+    // le seul moyen qu'un lien partagé survive au premier rendu.
+    if (demande && !communes) return demande;
+
     if (demande && communesDuTerritoire().some(function (c) { return c.cle === demande; })) {
       return demande;
     }
+    // La liste est là et le lieu n'y est pas : la demande n'a plus lieu d'être.
+    if (demande === lieuDemande) lieuDemande = '';
     var memorise = null;
     try { memorise = JSON.parse(localStorage.getItem(CLE_LIEU) || '{}')[cleTerritoire()]; }
     catch (e) { memorise = null; }
@@ -2135,26 +2159,135 @@
    * Choix du lieu. Il vient en tête de la page météo : c'est la première
    * question qu'on se pose en l'ouvrant — « et chez moi ? ».
    */
+  /**
+   * Comparaison tolérante : « francois » doit trouver « Saint-François », et
+   * « ste anne » doit trouver « Sainte-Anne ». On retire les accents, on
+   * ramène tout en minuscules et on traite tirets et apostrophes comme des
+   * espaces — personne ne tape « Morne-à-l'Eau » à l'identique.
+   */
+  function aplati(s) {
+    return String(s == null ? '' : s)
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .toLowerCase().replace(/['’\-]/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+
+  /** Les lieux correspondant à une saisie, dans l'ordre le plus utile. */
+  function lieuxFiltres(saisie) {
+    var liste = communesDuTerritoire();
+    var q = aplati(saisie);
+    if (!q) return liste;
+    var debut = [];
+    var ailleurs = [];
+    liste.forEach(function (c) {
+      var n = aplati(c.nom);
+      if (n.indexOf(q) === 0) debut.push(c);
+      // « anne » doit trouver « Sainte-Anne » : on cherche aussi en début de mot.
+      else if (n.indexOf(' ' + q) !== -1 || n.indexOf(q) !== -1) ailleurs.push(c);
+    });
+    return debut.concat(ailleurs);
+  }
+
+  /**
+   * Le choix du lieu est l'action principale de l'onglet météo : il ne se
+   * présente donc pas comme un jumeau du sélecteur de territoire, mais comme un
+   * bouton de recherche, avec le nom du lieu en clair.
+   */
   function selecteurLieu() {
     var liste = communesDuTerritoire();
-    var terr = territoireActif();
     if (!liste.length) return '';
     var courant = lieuActif();
+    var nom = courant ? nomDuLieu(territoireActif()) : '';
 
-    return '<label class="territoire lieu-choix" for="choix-lieu">'
-      + '<svg class="territoire__lieu" viewBox="0 0 24 24" aria-hidden="true">'
+    return '<button type="button" class="chercheur' + (courant ? '' : ' chercheur--vide') + '"'
+      + ' id="ouvrir-lieu" aria-haspopup="dialog" aria-expanded="false">'
+      + '<svg class="chercheur__epingle" viewBox="0 0 24 24" aria-hidden="true">'
       + '<path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11"/><circle cx="12" cy="10" r="2.6"/></svg>'
-      + '<span class="territoire__intitule">Commune</span>'
-      + '<span class="territoire__valeur" aria-hidden="true">'
-      + echapper(courant ? nomDuLieu(terr) : 'Tout le territoire') + '</span>'
-      + '<svg class="territoire__chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>'
-      + '<select id="choix-lieu" aria-label="Commune ou zone pour la météo">'
-      + '<option value=""' + (courant ? '' : ' selected') + '>Tout le territoire</option>'
-      + liste.map(function (c) {
-        return '<option value="' + echapper(c.cle) + '"' + (c.cle === courant ? ' selected' : '') + '>'
-          + echapper(c.nom) + '</option>';
-      }).join('')
-      + '</select></label>';
+      + '<span class="chercheur__texte">'
+      + '<span class="chercheur__intitule">Météo de</span>'
+      + '<span class="chercheur__valeur">'
+      + echapper(nom || 'Choisir ma commune') + '</span></span>'
+      + '<svg class="chercheur__loupe" viewBox="0 0 24 24" aria-hidden="true">'
+      + '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>'
+      + '</button>'
+      + '<div class="chercheur-panneau" id="panneau-lieu" role="dialog" aria-modal="true"'
+      + ' aria-label="Choisir une commune ou une zone" hidden>'
+      + '<div class="chercheur-panneau__tete">'
+      + '<svg class="chercheur-panneau__loupe" viewBox="0 0 24 24" aria-hidden="true">'
+      + '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>'
+      + '<input type="search" id="recherche-lieu" autocomplete="off" spellcheck="false"'
+      + ' placeholder="Rechercher une commune…"'
+      + ' aria-label="Rechercher une commune" aria-controls="liste-lieux">'
+      + '<button type="button" class="chercheur-panneau__fermer" id="fermer-lieu"'
+      + ' aria-label="Fermer la recherche">'
+      + '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>'
+      + '</button></div>'
+      + '<ul class="chercheur-liste" id="liste-lieux" role="listbox">'
+      + optionsLieux('') + '</ul></div>';
+  }
+
+  /** Le corps de la liste, seul morceau redessiné à chaque frappe. */
+  function optionsLieux(saisie) {
+    var courant = lieuActif();
+    var resultats = lieuxFiltres(saisie);
+    var html = '';
+
+    // « Tout le territoire » n'a de sens que sans recherche en cours.
+    if (!aplati(saisie)) {
+      html += '<li role="option" class="chercheur-item' + (courant ? '' : ' est-choisi') + '"'
+        + ' data-lieu="" aria-selected="' + (courant ? 'false' : 'true') + '" tabindex="-1">'
+        + '<span class="chercheur-item__nom">Tout le territoire</span>'
+        + '<span class="chercheur-item__note">moyenne générale</span></li>';
+    }
+
+    if (!resultats.length) {
+      return html + '<li class="chercheur-vide">Aucune commune ne correspond.<br>'
+        + 'Essayez sans accent, ou une partie du nom.</li>';
+    }
+
+    return html + resultats.map(function (c) {
+      var choisi = c.cle === courant;
+      return '<li role="option" class="chercheur-item' + (choisi ? ' est-choisi' : '') + '"'
+        + ' data-lieu="' + echapper(c.cle) + '" aria-selected="' + (choisi ? 'true' : 'false') + '"'
+        + ' tabindex="-1"><span class="chercheur-item__nom">' + echapper(c.nom) + '</span>'
+        + (c.population
+          ? '<span class="chercheur-item__note">' + formaterHabitants(c.population) + '</span>'
+          : '')
+        + '</li>';
+    }).join('');
+  }
+
+  function formaterHabitants(n) {
+    if (n >= 1000) return Math.round(n / 1000) + ' 000 hab.';
+    return n + ' hab.';
+  }
+
+  function ouvrirChercheurLieu() {
+    var panneau = $('#panneau-lieu');
+    var bouton = $('#ouvrir-lieu');
+    if (!panneau) return;
+    panneau.hidden = false;
+    document.body.classList.add('chercheur-ouvert');
+    if (bouton) bouton.setAttribute('aria-expanded', 'true');
+    var champ = $('#recherche-lieu');
+    if (champ) {
+      champ.value = '';
+      rafraichirListeLieux('');
+      // Sur téléphone, ouvrir le clavier tout de suite fait gagner un geste.
+      setTimeout(function () { champ.focus(); }, 30);
+    }
+  }
+
+  function fermerChercheurLieu() {
+    var panneau = $('#panneau-lieu');
+    var bouton = $('#ouvrir-lieu');
+    if (panneau) panneau.hidden = true;
+    document.body.classList.remove('chercheur-ouvert');
+    if (bouton) { bouton.setAttribute('aria-expanded', 'false'); bouton.focus(); }
+  }
+
+  function rafraichirListeLieux(saisie) {
+    var liste = $('#liste-lieux');
+    if (liste) liste.innerHTML = optionsLieux(saisie);
   }
 
   /** Clé de cache d'un bulletin : le territoire seul, ou territoire + lieu. */
@@ -2695,10 +2828,20 @@
    * lien « Martinique » ramenait silencieusement à la Guadeloupe.
    */
   function avecTerritoire(chemin) {
+    var params = [];
     var cle = cleTerritoire();
-    return cle && cle !== 'guadeloupe'
-      ? chemin + '?' + PARAM_TERRITOIRE + '=' + encodeURIComponent(cle)
-      : chemin;
+    if (cle && cle !== 'guadeloupe') {
+      params.push(PARAM_TERRITOIRE + '=' + encodeURIComponent(cle));
+    }
+    // La commune ne suit que la page météo : elle n'a pas de sens ailleurs, et
+    // la traîner partout encombrerait les adresses partagées pour rien.
+    var lieu = lieuActif();
+    // CHEMINS est déclaré plus bas dans le module : on ne suppose pas qu'il
+    // soit déjà défini si un rendu très précoce passe par ici.
+    if (lieu && chemin.indexOf((typeof CHEMINS !== 'undefined' && CHEMINS && CHEMINS.meteo) || '/meteo') === 0) {
+      params.push('lieu=' + encodeURIComponent(lieu));
+    }
+    return params.length ? chemin + '?' + params.join('&') : chemin;
   }
 
   function vueDeChemin(chemin) {
@@ -3051,6 +3194,16 @@
       return;
     }
 
+    // Chercheur de commune : ouverture, fermeture, choix, et clic sur le fond.
+    if (e.target.closest('#ouvrir-lieu')) return ouvrirChercheurLieu();
+    if (e.target.closest('#fermer-lieu')) return fermerChercheurLieu();
+    var itemLieu = e.target.closest('.chercheur-item');
+    if (itemLieu) return choisirLieuDepuisListe(itemLieu);
+    var panneauLieu = $('#panneau-lieu');
+    if (panneauLieu && !panneauLieu.hidden && e.target === panneauLieu) {
+      return fermerChercheurLieu();
+    }
+
     if (e.target.closest('#retour-accueil')) return allerA('accueil');
     if (e.target.closest('#bouton-actualiser')) return charger(true);
     if (e.target.closest('#reessayer')) return charger(true);
@@ -3096,6 +3249,30 @@
   });
 
   document.addEventListener('keydown', function (e) {
+    // Le chercheur de commune se pilote entièrement au clavier : flèches pour
+    // parcourir, Entrée pour valider le premier résultat, Échap pour sortir.
+    var panneauLieu = $('#panneau-lieu');
+    if (panneauLieu && !panneauLieu.hidden) {
+      if (e.key === 'Escape') { e.preventDefault(); fermerChercheurLieu(); return; }
+      if (e.key === 'Enter') {
+        var premier = panneauLieu.querySelector('.chercheur-item');
+        if (premier) { e.preventDefault(); choisirLieuDepuisListe(premier); }
+        return;
+      }
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        var items = [].slice.call(panneauLieu.querySelectorAll('.chercheur-item'));
+        if (!items.length) return;
+        e.preventDefault();
+        var i = items.indexOf(document.activeElement);
+        var suivant = e.key === 'ArrowDown'
+          ? items[i < 0 ? 0 : Math.min(i + 1, items.length - 1)]
+          : (i <= 0 ? $('#recherche-lieu') : items[i - 1]);
+        if (suivant) suivant.focus();
+        return;
+      }
+      return;
+    }
+
     if (e.key !== 'Escape') return;
     var p = $('#partage-replis');
     if (p && p.dataset.visible === 'true') {
@@ -3112,8 +3289,24 @@
     if (e.target.id === 'sat-curseur' && boucle) {
       boucle.pause();
       boucle.allerA(Number(e.target.value));
+      return;
     }
+    if (e.target.id === 'recherche-lieu') rafraichirListeLieux(e.target.value);
   });
+
+  /**
+   * Applique le lieu d'un élément de la liste. On ferme AVANT d'appliquer :
+   * `definirLieu` redessine toute la page météo, donc le panneau disparaît avec
+   * elle — si on fermait après, il ne resterait que la classe posée sur `body`,
+   * et le défilement de la page resterait bloqué.
+   */
+  function choisirLieuDepuisListe(item) {
+    var cle = item.dataset.lieu || '';
+    document.body.classList.remove('chercheur-ouvert');
+    definirLieu(cle);
+    var bouton = $('#ouvrir-lieu');
+    if (bouton) bouton.focus();
+  }
 
   document.addEventListener('change', function (e) {
     var prep = e.target.closest('[data-prep]');
@@ -3129,10 +3322,6 @@
     }
     if (e.target.id === 'choix-territoire') {
       definirTerritoire(e.target.value);
-      return;
-    }
-    if (e.target.id === 'choix-lieu') {
-      definirLieu(e.target.value);
       return;
     }
     var calque = e.target.closest('[data-calque]');
