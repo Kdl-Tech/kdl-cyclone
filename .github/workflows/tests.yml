@@ -95,7 +95,19 @@ jobs:
               }
             };
             verifier('public/index.html', /(?:src|href)=\"(\/[^\"]+)\"/g);
-            verifier('public/sw.js', /'(\/[^']+)'/g);
+            // Dans le service worker, seule la coquille liste des fichiers :
+            // le reste des chaînes sont des routes d'API, qui n'existent pas
+            // sur le disque et n'ont pas à être cherchées là.
+            const sw = fs.readFileSync('public/sw.js', 'utf8');
+            const coquille = sw.slice(sw.indexOf('var COQUILLE = ['), sw.indexOf('];', sw.indexOf('var COQUILLE = [')));
+            for (const m of coquille.matchAll(/'(\/[^']*)'/g)) {
+              const cible = m[1];
+              if (cible === '/') continue;                     // la racine, servie par le serveur
+              if (!fs.existsSync(path.join('public', cible))) {
+                console.error('Fichier de la coquille absent :', cible);
+                erreurs += 1;
+              }
+            }
             const m = JSON.parse(fs.readFileSync('public/manifest.webmanifest', 'utf8'));
             [...m.icons, ...(m.screenshots || [])].forEach((i) => {
               if (!fs.existsSync(path.join('public', i.src))) {
