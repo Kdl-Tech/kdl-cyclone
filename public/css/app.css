@@ -1,0 +1,2367 @@
+/* ==========================================================================
+   KDL Cyclone — feuille de style
+   Parti pris : la table du prévisionniste.
+   Le support est neutre — papier le jour, ardoise la nuit — et seules les
+   données ont le droit d'être colorées. Le bleu KDL est l'encre de la marque,
+   pas la peinture des surfaces.
+   Répartition tenue partout : 70 % de neutre, 20 % d'identité KDL,
+   10 % de couleur sémantique. Un aplat coloré signifie toujours quelque chose.
+   Échelle d'espacement et rayons repris du KDL Design System.
+   ========================================================================== */
+
+/* --------------------------------------------------------------- fontes */
+
+/* Inter, sous-ensemblée au français par `scripts/build-fontes.py` : 56 Ko pour
+   trois graisses, contre 1,8 Mo pour les fichiers d'origine. La feuille
+   déclarait cette fonte depuis le début sans qu'aucun fichier ne soit servi —
+   l'application tournait donc sur la pile système, avec un rendu différent sur
+   chaque appareil et des graisses synthétisées.
+   `swap` : le texte s'affiche immédiatement dans la fonte système, puis bascule
+   dès qu'Inter est là. Jamais d'écran vide en attendant une fonte. */
+@font-face {
+  font-family: "Inter KDL";
+  src: url("/fonts/inter-400.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Inter KDL";
+  src: url("/fonts/inter-600.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Inter KDL";
+  src: url("/fonts/inter-700.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  color-scheme: light;
+
+  /* --------------------------------------------- signature KDLTech
+     Le bleu officiel reste celui de la marque et ne sert qu'à elle : logo,
+     signature, lien vers KDLTech. Il ne pilote plus l'interface. */
+  --kdl-bleu: #1f5278;
+  --kdl-bleu-profond: #10293c;
+  --kdl-bleu-reflet: #2a6b98;
+  --kdl-encre: #1f5278;
+
+  /* --------------------------------------------- structure
+     Neutres chauds : ils portent la mise en page et laissent la couleur aux
+     données. Le fond n'est jamais blanc pur — un centre de veille consulté
+     tous les jours doit être reposant. */
+  --fond: #f1eee8;
+  --fond-degrade:
+    radial-gradient(1100px 620px at 88% -18%, rgba(34, 184, 217, 0.14) 0%, rgba(34, 184, 217, 0) 62%),
+    radial-gradient(900px 540px at 6% -12%, rgba(21, 103, 168, 0.12) 0%, rgba(21, 103, 168, 0) 58%),
+    linear-gradient(176deg, #f7f4ee 0%, #ece8e0 100%);
+  --surface: #ffffff;
+  --surface-2: #faf8f3;
+  --surface-3: #f0ece3;
+  --bordure: #e3ded3;
+  --bordure-forte: #c3bcae;
+
+  --texte: #1a1c1f;
+  --texte-doux: #565a60;
+  --texte-faible: #6b7076;
+
+  /* --------------------------------------------- océan et officiel
+     Le bleu profond dit deux choses à la fois : la mer, et la parole
+     officielle. C'est la couleur d'autorité de l'application. */
+  --ocean: #0b3f6b;
+  --ocean-vif: #1567a8;
+  --ocean-clair: #dbeafe;
+  --ocean-voile: rgba(21, 103, 168, 0.10);
+
+  /* --------------------------------------------- air, satellite
+     Le cyan appartient à l'atmosphère : imagerie satellite, humidité,
+     fraîcheur. C'est aussi la couleur des commandes actives. */
+  --cyan: #04708a;
+  --cyan-vif: #14b3d4;
+  --cyan-voile: rgba(20, 179, 212, 0.12);
+
+  /* --------------------------------------------- échelle de risque
+     Quatre crans, du calme au danger. Cette échelle ne sert QUE d'échelle :
+     aucune décoration ne l'emprunte. */
+  --n0: #0f7d4f;   /* calme, favorable */
+  --n1: #8a6300;   /* vigilance */
+  --n2: #bf4c0a;   /* risque notable */
+  --n3: #bc2622;   /* danger */
+  --n0-vif: #17a86a; --n1-vif: #f2b705; --n2-vif: #f97316; --n3-vif: #ef4444;
+  --n0-voile: rgba(23, 168, 106, 0.12);
+  --n1-voile: rgba(242, 183, 5, 0.16);
+  --n2-voile: rgba(249, 115, 22, 0.13);
+  --n3-voile: rgba(239, 68, 68, 0.12);
+
+  /* --------------------------------------------- analyse maison
+     Le violet est réservé à ce que KDL calcule lui-même. Il ne figure jamais
+     dans l'échelle de risque : on ne doit pas pouvoir confondre une
+     estimation expérimentale avec une donnée officielle. */
+  --kdl-analyse: #6d28d9;
+  --kdl-analyse-vif: #8b5cf6;
+  --kdl-analyse-voile: rgba(139, 92, 246, 0.13);
+
+  /* Alias historiques, conservés pour ne rien casser */
+  --ambre: var(--n1);
+  --ambre-vif: var(--n1-vif);
+  --ambre-voile: var(--n1-voile);
+  --rouge: var(--n3);
+  --rouge-voile: var(--n3-voile);
+  --vert: var(--n0);
+  --vert-voile: var(--n0-voile);
+
+  /* --------------------------------------------- grandeurs physiques
+     Une grandeur, une couleur, apprise en quelques visites. */
+  --d-vent: #0b7c72;      /* turquoise */
+  --d-pluie: #1d4ed8;     /* bleu intense */
+  --d-houle: #4338ca;     /* indigo */
+  --d-pression: #475569;  /* acier */
+  --d-thermique: #c2413a; /* corail */
+  --d-uv: #b3117a;        /* fuchsia */
+  --d-sable: #92400e;     /* ocre saharien */
+  --d-soleil: #a16207;    /* doré */
+
+  --d-vent-vif: #14b8a6;
+  --d-pluie-vif: #3b82f6;
+  --d-houle-vif: #6366f1;
+  --d-pression-vif: #64748b;
+  --d-thermique-vif: #ff7a6b;
+  --d-uv-vif: #ec4899;
+  --d-sable-vif: #c98a1e;
+  --d-soleil-vif: #eab308;
+
+  /* Profondeur : ombres multiples et douces, jamais une ombre dure */
+  --ombre-1: 0 1px 2px rgba(26, 28, 31, 0.05), 0 2px 6px rgba(26, 28, 31, 0.04);
+  --ombre-2: 0 2px 4px rgba(26, 28, 31, 0.05), 0 8px 20px rgba(26, 28, 31, 0.08);
+  --ombre-3: 0 4px 8px rgba(26, 28, 31, 0.07), 0 18px 44px rgba(26, 28, 31, 0.14);
+  --halo-cyan: 0 0 0 1px rgba(20, 179, 212, 0.3), 0 0 28px rgba(20, 179, 212, 0.2);
+
+  /* Rythme — échelle KDL */
+  --e1: 0.25rem; --e2: 0.5rem; --e3: 0.75rem; --e4: 1rem;
+  --e5: 1.25rem; --e6: 1.5rem; --e8: 2rem; --e10: 2.5rem; --e12: 3rem;
+
+  --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-xl: 22px; --r-pill: 999px;
+
+  /* « Inter KDL » est la fonte réellement servie ; « Inter » profite de celle
+     que l'utilisateur aurait déjà installée, et la pile système reste le filet. */
+  --police: "Inter KDL", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --police-chiffres: var(--police);
+
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --t-rapide: 130ms var(--ease);
+  --t-normale: 220ms var(--ease);
+
+  --largeur-max: 1180px;
+  --hauteur-nav: 66px;
+}
+
+/* Mode sombre : la nuit d'un centre de veille. La base est une ardoise
+   légèrement bleutée, pas un noir mort, et **toutes** les couleurs restent
+   présentes — un thème sombre réduit à du noir et de l'orange perdrait la
+   moitié de l'information. */
+:root[data-theme="sombre"] {
+  color-scheme: dark;
+
+  --kdl-bleu: #2f6f9d;
+  --kdl-bleu-profond: #16344a;
+  --kdl-bleu-reflet: #3c85b8;
+  --kdl-encre: #7cb8de;
+
+  --fond: #0a0e14;
+  --fond-degrade:
+    radial-gradient(1100px 620px at 88% -18%, rgba(20, 179, 212, 0.16) 0%, rgba(20, 179, 212, 0) 60%),
+    radial-gradient(900px 540px at 4% -14%, rgba(21, 103, 168, 0.20) 0%, rgba(21, 103, 168, 0) 58%),
+    linear-gradient(176deg, #10151d 0%, #080b10 100%);
+  --surface: #151b23;
+  --surface-2: #1b222c;
+  --surface-3: #252d38;
+  --bordure: #2b3441;
+  --bordure-forte: #3f4a59;
+
+  --texte: #eef2f6;
+  --texte-doux: #a9b4c0;
+  --texte-faible: #8792a0;
+
+  --ocean: #5aa9e6;
+  --ocean-vif: #7cc0f5;
+  --ocean-clair: #14304a;
+  --ocean-voile: rgba(90, 169, 230, 0.16);
+
+  --cyan: #35d0ee;
+  --cyan-vif: #6fe0f7;
+  --cyan-voile: rgba(53, 208, 238, 0.15);
+
+  --n0: #34d399; --n1: #fbbf24; --n2: #fb923c; --n3: #f87171;
+  --n0-vif: #5eead4; --n1-vif: #fcd34d; --n2-vif: #fdba74; --n3-vif: #fca5a5;
+  --n0-voile: rgba(52, 211, 153, 0.16);
+  --n1-voile: rgba(251, 191, 36, 0.16);
+  --n2-voile: rgba(251, 146, 60, 0.16);
+  --n3-voile: rgba(248, 113, 113, 0.16);
+
+  --kdl-analyse: #a78bfa;
+  --kdl-analyse-vif: #c4b5fd;
+  --kdl-analyse-voile: rgba(167, 139, 250, 0.16);
+
+  --d-vent: #2dd4bf;
+  --d-pluie: #60a5fa;
+  --d-houle: #818cf8;
+  --d-pression: #94a3b8;
+  --d-thermique: #ff8a7a;
+  --d-uv: #f472b6;
+  --d-sable: #d9a441;
+  --d-soleil: #facc15;
+
+  --d-vent-vif: #5eead4;
+  --d-pluie-vif: #93c5fd;
+  --d-houle-vif: #a5b4fc;
+  --d-pression-vif: #cbd5e1;
+  --d-thermique-vif: #ffa99b;
+  --d-uv-vif: #f9a8d4;
+  --d-sable-vif: #eac16a;
+  --d-soleil-vif: #fde047;
+
+  --ombre-1: 0 1px 2px rgba(0, 0, 0, 0.5), 0 2px 6px rgba(0, 0, 0, 0.35);
+  --ombre-2: 0 2px 6px rgba(0, 0, 0, 0.55), 0 10px 26px rgba(0, 0, 0, 0.45);
+  --ombre-3: 0 6px 14px rgba(0, 0, 0, 0.6), 0 22px 52px rgba(0, 0, 0, 0.6);
+  --halo-cyan: 0 0 0 1px rgba(53, 208, 238, 0.3), 0 0 34px rgba(53, 208, 238, 0.22);
+}
+
+/* -------------------------------------------------------------- fondations */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  font-family: var(--police);
+  font-size: 1rem;
+  line-height: 1.55;
+  color: var(--texte);
+  background: var(--fond);
+  background-image: var(--fond-degrade);
+  background-attachment: fixed;
+  min-height: 100vh;
+  min-height: 100dvh;
+  -webkit-font-smoothing: antialiased;
+  padding-bottom: calc(var(--hauteur-nav) + env(safe-area-inset-bottom));
+}
+
+h1, h2, h3 { margin: 0; line-height: 1.14; letter-spacing: -0.02em; font-weight: 700; }
+p { margin: 0; }
+button { font: inherit; color: inherit; }
+
+/* Chiffres alignés partout où ils se comparent : distances, scores, heures. */
+.chiffres, .valeur, table, time, .cadran-legende {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+:focus-visible {
+  outline: 2px solid var(--cyan-vif);
+  outline-offset: 3px;
+  border-radius: var(--r-sm);
+}
+
+.saut-contenu {
+  position: absolute;
+  left: -9999px;
+  top: var(--e2);
+  z-index: 100;
+  background: var(--surface);
+  padding: var(--e3) var(--e5);
+  border-radius: var(--r-md);
+  box-shadow: var(--ombre-3);
+}
+.saut-contenu:focus { left: var(--e4); }
+
+.visuellement-cache {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* ------------------------------------------------------------------ entête */
+
+.entete {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: var(--e3);
+  padding: var(--e3) var(--e4);
+  padding-top: calc(var(--e3) + env(safe-area-inset-top));
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  backdrop-filter: blur(14px) saturate(1.3);
+  -webkit-backdrop-filter: blur(14px) saturate(1.3);
+  border-bottom: 1px solid var(--bordure);
+}
+
+.entete__marque { display: flex; align-items: center; gap: var(--e3); min-width: 0; }
+.entete__logo { width: 34px; height: 34px; flex: none; border-radius: 9px; }
+
+/* Le logo officiel KDLTech est sombre. En thème sombre il disparaîtrait :
+   on lui donne un fond clair. Le logo lui-même n'est jamais recoloré. */
+:root[data-theme="sombre"] .entete__logo,
+:root[data-theme="sombre"] .signature__logo {
+  background: #eef4f9;
+  padding: 3px;
+}
+
+.entete__titres { min-width: 0; }
+.entete__titre {
+  font-size: 1.02rem;
+  font-weight: 750;
+  letter-spacing: -0.025em;
+  white-space: nowrap;
+}
+.entete__titre span { color: var(--cyan); }
+.entete__soustitre {
+  font-size: 0.7rem;
+  color: var(--texte-faible);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+/* Sous 430 px, la signature complète ne tient pas : plutôt qu'un texte coupé,
+   on affiche la formule courte, qui reste informative. */
+.entete__soustitre .longue { display: none; }
+.entete__soustitre .courte { display: inline; }
+@media (min-width: 430px) {
+  .entete__soustitre .longue { display: inline; }
+  .entete__soustitre .courte { display: none; }
+}
+
+.entete__actions { margin-left: auto; display: flex; align-items: center; gap: var(--e2); }
+
+.bouton-icone {
+  display: grid;
+  place-items: center;
+  width: 40px; height: 40px;
+  border: 1px solid var(--bordure);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  cursor: pointer;
+  transition: background var(--t-rapide), border-color var(--t-rapide), transform var(--t-rapide);
+}
+.bouton-icone:hover { background: var(--surface-3); border-color: var(--bordure-forte); }
+.bouton-icone:active { transform: scale(0.94); }
+.bouton-icone svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ---------------------------------------------------------------- ossature */
+
+.page { max-width: var(--largeur-max); margin: 0 auto; padding: var(--e5) var(--e4) var(--e10); }
+.vue { display: none; animation: apparition 260ms var(--ease); }
+.vue[data-active="true"] { display: block; }
+
+@keyframes apparition {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+.grille { display: grid; gap: var(--e4); }
+@media (min-width: 900px) {
+  .grille--2 { grid-template-columns: 1fr 1fr; }
+  .grille--accueil { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); align-items: start; }
+}
+
+.carte-bloc {
+  background: var(--surface);
+  border: 1px solid var(--bordure);
+  border-radius: var(--r-lg);
+  padding: var(--e5);
+  box-shadow: var(--ombre-1);
+}
+
+.section-titre {
+  --d: var(--cyan);
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--texte-doux);
+  margin-bottom: var(--e4);
+  display: flex;
+  align-items: center;
+  gap: var(--e2);
+}
+/* Un repère coloré ouvre chaque section : la page se parcourt à la couleur. */
+.section-titre::before {
+  content: "";
+  width: 4px;
+  height: 15px;
+  border-radius: var(--r-pill);
+  background: var(--d);
+  flex: none;
+}
+.section-titre--vent { --d: var(--d-vent); }
+.section-titre--pluie { --d: var(--d-pluie); }
+.section-titre--mer { --d: var(--d-houle); }
+.section-titre--air { --d: var(--d-uv); }
+.section-titre--officiel { --d: var(--ocean-vif); }
+.section-titre--kdl { --d: var(--kdl-analyse); }
+.section-titre--risque { --d: var(--n2-vif); }
+
+/* --------------------------------------------------- bandeau de situation */
+
+/* Le bandeau est l'écran de veille posé sur la table : une surface sombre,
+   neutre, qui n'emprunte sa couleur qu'au niveau de la situation. C'est le
+   seul endroit où la couleur sémantique a le droit d'occuper de la surface. */
+.situation {
+  /* Teinte neutre tant que le niveau n'est pas connu : afficher le vert du
+     calme avant d'avoir les données reviendrait à rassurer sans savoir. */
+  --teinte: #8a9099;
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--r-xl);
+  padding: var(--e6);
+  background:
+    radial-gradient(720px 420px at 88% -22%, color-mix(in srgb, var(--teinte) 34%, transparent) 0%, transparent 62%),
+    radial-gradient(600px 380px at 6% 110%, rgba(20, 179, 212, 0.22) 0%, transparent 60%),
+    linear-gradient(158deg, #12456e 0%, #0b2c48 48%, #071b2d 100%);
+  color: #f4f5f6;
+  box-shadow: var(--ombre-3);
+  margin-bottom: var(--e5);
+  display: grid;
+  gap: var(--e5);
+  align-items: start;
+}
+
+/* Le cran de menace se lit avant même le texte : un filet en haut du bandeau. */
+.situation::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--teinte) 0%, color-mix(in srgb, var(--teinte) 18%, transparent) 78%, transparent 100%);
+}
+
+.situation--n0 { --teinte: var(--n0-vif); }
+.situation--n1 { --teinte: var(--n1-vif); }
+.situation--n2 { --teinte: var(--n2-vif); }
+.situation--n3 { --teinte: var(--n3-vif); }
+/* Alias conservés : un rendu mis en cache peut encore les poser. */
+.situation--attention { --teinte: var(--n1-vif); }
+.situation--alerte { --teinte: var(--n3-vif); }
+
+/* Le niveau local se lit à la couleur autant qu'au mot. */
+.bloc-risque { border-left: 4px solid var(--teinte, var(--bordure)); }
+.bloc-risque--n0 { --teinte: var(--n0); --teinte-texte: var(--n0); }
+.bloc-risque--n1 { --teinte: var(--n1-vif); --teinte-texte: var(--n1); }
+.bloc-risque--n2 { --teinte: var(--n2-vif); --teinte-texte: var(--n2); }
+.bloc-risque--n3 { --teinte: var(--n3); --teinte-texte: var(--n3); }
+.bloc-risque__valeur {
+  font-size: 1.7rem;
+  font-weight: 740;
+  letter-spacing: -0.03em;
+  color: var(--teinte-texte, var(--teinte));
+}
+
+@media (min-width: 880px) {
+  .situation {
+    grid-template-columns: minmax(0, 1.15fr) minmax(290px, 0.85fr);
+    gap: var(--e8);
+    padding: var(--e8);
+  }
+}
+
+.situation__corps { min-width: 0; }
+
+.situation__etat {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e2);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: var(--e1) var(--e3);
+  border-radius: var(--r-pill);
+  color: var(--teinte);
+  background: color-mix(in srgb, var(--teinte) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--teinte) 38%, transparent);
+  margin-bottom: var(--e4);
+}
+.situation__etat .pastille {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--teinte);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--teinte) 22%, transparent);
+}
+
+.situation__titre {
+  font-size: clamp(1.55rem, 4.6vw, 2.4rem);
+  font-weight: 760;
+  letter-spacing: -0.032em;
+  max-width: 20ch;
+  text-wrap: balance;
+}
+.situation__detail {
+  margin-top: var(--e3);
+  font-size: 1rem;
+  color: rgba(244, 245, 246, 0.78);
+  max-width: 54ch;
+}
+
+.situation__pied {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+  gap: var(--e4);
+  font-size: 0.74rem;
+  letter-spacing: 0.04em;
+  color: rgba(244, 245, 246, 0.58);
+}
+.situation__pied > div {
+  border-top: 1px solid rgba(244, 245, 246, 0.14);
+  padding-top: var(--e2);
+}
+.situation__pied strong {
+  display: block; color: #fff;
+  font-size: 1.02rem; font-weight: 660; letter-spacing: -0.02em;
+  margin-bottom: 2px;
+}
+
+/* --------------------------------- cartouche officiel (partie droite du hero) */
+
+/* La valeur officielle du NHC est la donnée la plus lourde de conséquences :
+   elle occupe la droite du bandeau, seule, à une taille que rien ne conteste. */
+.cartouche {
+  position: relative;
+  border-radius: var(--r-lg);
+  padding: var(--e5);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(2px);
+}
+
+.cartouche__source {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 0.72rem; font-weight: 750;
+  letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--teinte);
+}
+.cartouche__source::before {
+  content: ""; width: 14px; height: 1px; background: currentColor; display: block;
+}
+
+.cartouche__valeur {
+  display: flex; align-items: baseline; gap: 2px;
+  margin-top: var(--e2);
+  font-variant-numeric: tabular-nums;
+  line-height: 0.92;
+}
+.cartouche__valeur b {
+  font-size: clamp(3.4rem, 12vw, 4.6rem);
+  font-weight: 780;
+  letter-spacing: -0.055em;
+  color: #fff;
+}
+.cartouche__valeur span { font-size: 1.5rem; font-weight: 600; color: rgba(244, 245, 246, 0.62); }
+
+.cartouche__quoi {
+  font-size: 0.86rem;
+  color: rgba(244, 245, 246, 0.72);
+  margin-top: var(--e2);
+  max-width: 26ch;
+}
+
+.cartouche__barre {
+  position: relative;
+  height: 6px;
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.1);
+  margin-top: var(--e4);
+  overflow: hidden;
+}
+.cartouche__barre i {
+  position: absolute; inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--teinte) 55%, #fff) 0%, var(--teinte) 100%);
+  transition: width var(--t-normale);
+}
+
+.cartouche__lignes {
+  margin: var(--e4) 0 0;
+  display: grid;
+  gap: var(--e2);
+  font-size: 0.86rem;
+}
+.cartouche__lignes > div {
+  display: flex; align-items: baseline; justify-content: space-between; gap: var(--e3);
+}
+.cartouche__lignes dt { color: rgba(244, 245, 246, 0.6); }
+.cartouche__lignes dd {
+  margin: 0; font-weight: 650; color: #fff;
+  font-variant-numeric: tabular-nums; text-align: right;
+}
+
+/* L'estimation maison est mise à part, sous un filet : on ne doit jamais
+   pouvoir la confondre avec le chiffre officiel du dessus. */
+.cartouche__kdl {
+  margin-top: var(--e4);
+  padding-top: var(--e3);
+  border-top: 1px dashed rgba(244, 245, 246, 0.2);
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--e2);
+  font-size: 0.82rem;
+  color: rgba(244, 245, 246, 0.72);
+}
+.cartouche__kdl b { color: #fff; font-weight: 700; font-variant-numeric: tabular-nums; }
+.cartouche .etiquette--kdl {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.24);
+}
+
+.cartouche--calme .cartouche__valeur b { font-size: clamp(2.2rem, 7vw, 2.8rem); }
+
+/* Le cartouche suit le cran du système qu'il décrit. */
+.cartouche--n0 { --teinte: var(--n0-vif); }
+.cartouche--n1 { --teinte: var(--n1-vif); }
+.cartouche--n2 { --teinte: var(--n2-vif); }
+.cartouche--n3 { --teinte: var(--n3-vif); }
+
+/* --------------------------------------------- cadran de veille (signature) */
+
+.cadran-bloc { display: grid; gap: var(--e4); justify-items: center; }
+.cadran-enveloppe { position: relative; width: 100%; max-width: 340px; aspect-ratio: 1; }
+#cadran { width: 100%; height: 100%; display: block; }
+
+.cadran-legende {
+  display: flex; flex-wrap: wrap; gap: var(--e2) var(--e5);
+  justify-content: center;
+  font-size: 0.78rem; color: var(--texte-doux);
+}
+.cadran-legende span { display: inline-flex; align-items: center; gap: var(--e2); }
+.cadran-legende i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+/* ------------------------------------------------------- cartes de système */
+
+.liste-systemes { display: grid; gap: var(--e3); }
+
+/* Trois systèmes de niveaux différents ne peuvent pas se ressembler : le cran
+   coloré, la taille du chiffre officiel et la teinte du fond les séparent. */
+.systeme {
+  --teinte: var(--texte-faible);
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--e3) var(--e4);
+  align-items: center;
+  width: 100%;
+  text-align: left;
+  padding: var(--e4);
+  padding-left: calc(var(--e4) + 5px);
+  background: var(--surface);
+  border: 1px solid var(--bordure);
+  border-radius: var(--r-md);
+  box-shadow: var(--ombre-1);
+  cursor: pointer;
+  transition: transform var(--t-rapide), box-shadow var(--t-normale), border-color var(--t-rapide);
+}
+.systeme::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 5px;
+  background: var(--teinte);
+}
+.systeme:hover { transform: translateY(-2px); box-shadow: var(--ombre-2); border-color: var(--bordure-forte); }
+.systeme:active { transform: translateY(0); }
+
+/* `--teinte` peint les aplats, `--teinte-texte` écrit : en thème clair, un
+   ambre lumineux sur fond blanc ne serait pas lisible. */
+.systeme--n0 { --teinte: var(--n0); --teinte-texte: var(--n0); }
+.systeme--n1 { --teinte: var(--n1-vif); --teinte-texte: var(--n1); background: color-mix(in srgb, var(--n1) 5%, var(--surface)); }
+.systeme--n2 { --teinte: var(--n2-vif); --teinte-texte: var(--n2); background: color-mix(in srgb, var(--n2) 7%, var(--surface)); }
+.systeme--n3 { --teinte: var(--n3-vif); --teinte-texte: var(--n3); background: color-mix(in srgb, var(--n3) 8%, var(--surface)); }
+
+/* Alias conservés : d'anciens rendus peuvent encore les poser. */
+.systeme--attention { --teinte: var(--n1-vif); }
+.systeme--alerte { --teinte: var(--n3-vif); }
+
+/* Bloc officiel : le chiffre du NHC, seul de cette taille dans la carte. */
+.systeme__officiel {
+  flex: none;
+  min-width: 66px;
+  text-align: center;
+  padding-right: var(--e4);
+  border-right: 1px solid var(--bordure);
+}
+.systeme__prob {
+  font-size: 1.85rem;
+  font-weight: 760;
+  letter-spacing: -0.045em;
+  line-height: 1;
+  color: var(--teinte-texte, var(--teinte));
+  font-variant-numeric: tabular-nums;
+}
+.systeme__prob small { font-size: 0.9rem; font-weight: 600; margin-left: 1px; }
+.systeme__prob--vide { font-size: 1.1rem; color: var(--texte-faible); letter-spacing: 0; }
+.systeme__prob-note {
+  margin-top: 3px;
+  font-size: 0.72rem; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--texte-faible);
+}
+
+.systeme[data-majeur="true"] { padding-top: var(--e5); padding-bottom: var(--e5); box-shadow: var(--ombre-2); }
+.systeme[data-majeur="true"] .systeme__prob { font-size: 2.35rem; }
+.systeme[data-majeur="true"] .systeme__nom { font-size: 1.15rem; }
+
+.systeme__corps { min-width: 0; }
+.systeme__nom { font-size: 1.02rem; font-weight: 680; letter-spacing: -0.02em; }
+.systeme__meta {
+  margin-top: 3px;
+  font-size: 0.84rem; color: var(--texte-doux);
+  display: flex; flex-wrap: wrap; gap: var(--e1) var(--e3);
+}
+.systeme__meta b { font-weight: 650; color: var(--texte); font-variant-numeric: tabular-nums; }
+
+/* L'estimation maison : une barre discrète, jamais un grand chiffre. On ne
+   doit pas pouvoir la confondre avec la probabilité officielle. */
+.systeme__kdl {
+  margin-top: var(--e3);
+  display: flex; align-items: center; gap: var(--e2);
+  font-size: 0.72rem;
+  color: var(--texte-faible);
+}
+.systeme__kdl-label {
+  font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--kdl-analyse);
+}
+.systeme__kdl-barre {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 40px;
+  height: 4px;
+  border-radius: var(--r-pill);
+  background: var(--surface-3);
+  overflow: hidden;
+}
+.systeme__kdl-barre i {
+  position: absolute; inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: repeating-linear-gradient(
+    135deg,
+    var(--kdl-analyse) 0 3px,
+    color-mix(in srgb, var(--kdl-analyse) 40%, transparent) 3px 6px
+  );
+}
+.systeme__kdl-valeur { font-weight: 700; color: var(--kdl-analyse); font-variant-numeric: tabular-nums; }
+
+.systeme__chevron { color: var(--texte-faible); flex: none; }
+.systeme__chevron svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ------------------------------------------------------------- étiquettes */
+
+.etiquette {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 0.73rem; font-weight: 700;
+  letter-spacing: 0.07em; text-transform: uppercase;
+  padding: 3px var(--e2);
+  border-radius: var(--r-sm);
+  border: 1px solid transparent;
+  /* Les libellés longs se replient plutôt que de déborder de leur carte. */
+  white-space: normal;
+  text-wrap: balance;
+  max-width: 100%;
+}
+.stat .etiquette, .mesure .etiquette { line-height: 1.35; }
+
+/* La provenance se lit à la forme autant qu'à la couleur, et n'emprunte
+   jamais les couleurs de l'échelle de menace : un tampon plein pour
+   l'officiel, l'encre KDL pour l'analyse maison, du pointillé pour l'incertain. */
+.etiquette--officiel { background: var(--ocean); color: #fff; border-color: var(--ocean); }
+.etiquette--modele   { background: var(--cyan-voile); color: var(--cyan); border-color: color-mix(in srgb, var(--cyan) 34%, transparent); }
+.etiquette--kdl      { background: var(--kdl-analyse-voile); color: var(--kdl-analyse); border-color: color-mix(in srgb, var(--kdl-analyse) 40%, transparent); }
+.etiquette--experimental { background: transparent; color: var(--kdl-analyse); border-color: color-mix(in srgb, var(--kdl-analyse) 45%, transparent); border-style: dashed; }
+.etiquette--perime   { background: var(--n3-voile); color: var(--n3); border-color: color-mix(in srgb, var(--n3) 32%, transparent); }
+.etiquette--indispo  { background: var(--surface-3); color: var(--texte-faible); border-color: var(--bordure); border-style: dashed; }
+
+.legende-provenance {
+  display: flex; flex-wrap: wrap; gap: var(--e2);
+  margin-top: var(--e4);
+  padding-top: var(--e4);
+  border-top: 1px dashed var(--bordure);
+}
+
+/* ------------------------------------------------------------------ carte */
+
+.carte-enveloppe {
+  position: relative;
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  border: 1px solid var(--bordure-forte);
+  box-shadow: var(--ombre-2);
+  background: #052134;
+  touch-action: none;
+  /* La carte est la pièce centrale : elle garde une hauteur utile partout,
+     du téléphone tenu en main au grand écran. */
+  height: clamp(360px, 62vh, 640px);
+}
+@media (orientation: landscape) and (max-height: 560px) {
+  /* Téléphone couché : la carte prend ce qu'il reste, sans écraser la nav. */
+  .carte-enveloppe { height: 78vh; }
+}
+@media (min-width: 1400px) {
+  .carte-enveloppe { height: clamp(520px, 68vh, 760px); }
+}
+.carte-enveloppe:fullscreen { height: 100vh; border-radius: 0; }
+
+#carte { display: block; width: 100%; height: 100%; cursor: grab; }
+#carte:active { cursor: grabbing; }
+
+.carte-outils {
+  position: absolute; top: var(--e3); right: var(--e3);
+  display: grid; gap: var(--e2);
+  z-index: 3;
+}
+/* Commandes tactiles : 44 px pleins, contrastées sur l'océan sombre. */
+.carte-outils .bouton-icone {
+  width: 44px; height: 44px;
+  background: rgba(5, 24, 40, 0.72);
+  border-color: rgba(226, 242, 249, 0.28);
+  color: #f3f9fc;
+  backdrop-filter: blur(8px);
+}
+.carte-outils .bouton-icone:hover {
+  background: rgba(13, 79, 122, 0.9);
+  border-color: var(--cyan-vif);
+}
+
+.calques {
+  position: absolute; left: var(--e3); bottom: var(--e3);
+  z-index: 3;
+  display: grid; gap: 2px;
+  padding: var(--e2);
+  border-radius: var(--r-md);
+  background: rgba(5, 24, 40, 0.82);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(226, 242, 249, 0.22);
+  box-shadow: var(--ombre-2);
+  font-size: 0.8rem;
+  color: #eef6fa;
+  max-width: min(280px, calc(100% - var(--e6)));
+}
+
+/* Sur téléphone, les calques deviennent un panneau ancré au bas de la carte :
+   il s'ouvre d'un doigt et ne recouvre jamais les tracés quand il est replié. */
+@media (max-width: 760px) {
+  .calques {
+    left: var(--e2); right: var(--e2); bottom: var(--e2);
+    max-width: none;
+    border-radius: var(--r-lg);
+  }
+  .calques[data-ouvert="true"] .calques__liste {
+    grid-template-columns: 1fr 1fr;
+    gap: 2px var(--e3);
+    padding-bottom: var(--e3);
+  }
+  .calques label { min-height: 40px; }
+}
+.calques label { display: flex; align-items: center; gap: var(--e2); padding: 3px var(--e2); border-radius: var(--r-sm); cursor: pointer; }
+.calques label:hover { background: rgba(53, 208, 238, 0.16); }
+.calques input { accent-color: var(--cyan); width: 15px; height: 15px; }
+
+.carte-infobulle {
+  position: absolute;
+  z-index: 3;
+  pointer-events: none;
+  max-width: 240px;
+  padding: var(--e3);
+  border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--surface) 95%, transparent);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--bordure-forte);
+  box-shadow: var(--ombre-3);
+  font-size: 0.84rem;
+  opacity: 0;
+  transition: opacity var(--t-rapide);
+}
+.carte-infobulle[data-visible="true"] { opacity: 1; }
+.carte-infobulle b { display: block; margin-bottom: 2px; }
+
+/* ------------------------------------------------------------- facteurs */
+
+.facteurs { display: grid; gap: var(--e2); }
+
+.facteur {
+  border: 1px solid var(--bordure);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.facteur__tete {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: var(--e3);
+  width: 100%;
+  padding: var(--e3) var(--e4);
+  background: none; border: 0; cursor: pointer; text-align: left;
+}
+.facteur__tete:hover { background: var(--surface-3); }
+.facteur__nom { font-weight: 620; font-size: 0.94rem; }
+.facteur__valeur { font-weight: 700; font-size: 0.94rem; }
+.facteur__fleche { transition: transform var(--t-rapide); color: var(--texte-faible); }
+.facteur[data-ouvert="true"] .facteur__fleche { transform: rotate(180deg); }
+.facteur__fleche svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; }
+
+.facteur__corps { display: none; padding: 0 var(--e4) var(--e4); color: var(--texte-doux); font-size: 0.92rem; max-width: 68ch; }
+.facteur[data-ouvert="true"] .facteur__corps { display: block; }
+
+.facteur__barre { height: 4px; background: var(--surface-3); position: relative; }
+.facteur__barre i { position: absolute; top: 0; bottom: 0; left: 50%; transition: width var(--t-normale), left var(--t-normale); }
+.facteur--favorable .facteur__barre i { background: var(--vert); }
+.facteur--defavorable .facteur__barre i { background: var(--ambre-vif); }
+.facteur--neutre .facteur__barre i { background: var(--texte-faible); }
+.facteur--inconnu { opacity: 0.72; border-style: dashed; }
+
+/* ----------------------------------------------------------- statistiques */
+
+/* Une grandeur physique, une couleur, un pictogramme. Sept mesures alignées
+   ne doivent plus se ressembler : la teinte ne colore qu'un filet et l'icône,
+   la valeur reste en encre neutre pour rester lisible. */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(148px, 1fr)); gap: var(--e3); }
+.stat {
+  --d: var(--texte-faible);
+  position: relative;
+  overflow: hidden;
+  padding: var(--e4);
+  border-radius: var(--r-md);
+  /* La teinte de la grandeur baigne la carte au lieu de se réduire à un filet :
+     on reconnaît le vent, la pluie ou l'UV avant même de lire le libellé. */
+  background:
+    linear-gradient(150deg, color-mix(in srgb, var(--d) 13%, transparent) 0%, transparent 68%),
+    var(--surface);
+  border: 1px solid color-mix(in srgb, var(--d) 26%, var(--bordure));
+  box-shadow: var(--ombre-1);
+}
+.stat::before {
+  content: "";
+  position: absolute; inset: 0 auto 0 0;
+  width: 4px;
+  background: linear-gradient(180deg, var(--d), color-mix(in srgb, var(--d) 35%, transparent));
+}
+.stat__tete { display: flex; align-items: center; gap: var(--e2); }
+/* Pastille d'icône : la couleur devient un objet, pas un trait. */
+.stat__tete .picto {
+  color: var(--d);
+  flex: none;
+  box-sizing: content-box;
+  width: 15px; height: 15px;
+  padding: 5px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--d) 16%, transparent);
+}
+.stat__label { font-size: 0.73rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--texte-doux); font-weight: 700; }
+.stat__valeur { font-size: 1.6rem; font-weight: 740; letter-spacing: -0.03em; margin-top: var(--e2); color: var(--texte); }
+.stat__valeur small { font-size: 0.9rem; font-weight: 600; color: var(--texte-doux); }
+.stat__note { font-size: 0.78rem; color: var(--texte-faible); margin-top: 2px; }
+
+/* Une mesure peut aussi porter un cran de l'échelle de menace : le filet
+   coloré dit alors « faible », « moyen » ou « élevé » sans autre mot. */
+.stat--cran0 { --d: var(--n0); }
+.stat--cran1 { --d: var(--n1-vif); }
+.stat--cran2 { --d: var(--n2-vif); }
+.stat--cran3 { --d: var(--n3); }
+
+.stat--vent { --d: var(--d-vent); }
+.stat--pluie { --d: var(--d-pluie); }
+.stat--houle { --d: var(--d-houle); }
+.stat--pression { --d: var(--d-pression); }
+.stat--mer, .stat--thermique { --d: var(--d-thermique); }
+.stat--uv { --d: var(--d-uv); }
+.stat--sable { --d: var(--d-sable); }
+.stat--soleil { --d: var(--d-soleil); }
+
+/* ------------------------------------------------------- alertes locales */
+
+/* Vent, UV et brume de sable ne se ressemblent en rien dans la vie réelle :
+   ils ne doivent pas se ressembler à l'écran non plus. */
+.alertes { display: grid; gap: var(--e2); }
+
+.alerte {
+  --d: var(--texte-doux);
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--e3);
+  padding: var(--e3) var(--e4);
+  padding-left: calc(var(--e4) + 4px);
+  border-radius: var(--r-md);
+  border: 1px solid color-mix(in srgb, var(--d) 26%, var(--bordure));
+  background: color-mix(in srgb, var(--d) 7%, var(--surface));
+}
+.alerte::before {
+  content: "";
+  position: absolute; inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--d);
+}
+.alerte[data-intensite="fort"] { background: color-mix(in srgb, var(--d) 14%, var(--surface)); }
+.alerte[data-intensite="fort"]::before { width: 6px; }
+
+.alerte__icone {
+  display: grid; place-items: center;
+  width: 34px; height: 34px; flex: none;
+  border-radius: 50%;
+  color: var(--d);
+  background: color-mix(in srgb, var(--d) 16%, transparent);
+}
+.alerte__icone svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+.alerte__texte { min-width: 0; }
+.alerte__texte b { display: block; font-weight: 680; font-size: 0.96rem; letter-spacing: -0.01em; }
+.alerte__texte span { font-size: 0.86rem; color: var(--texte-doux); }
+
+.alerte__valeur {
+  text-align: right; flex: none;
+  font-size: 1.15rem; font-weight: 740; letter-spacing: -0.03em;
+  color: var(--d);
+  font-variant-numeric: tabular-nums;
+}
+.alerte__valeur small { display: block; font-size: 0.73rem; font-weight: 650; color: var(--texte-faible); letter-spacing: 0.04em; }
+
+.alerte--rafales { --d: var(--d-vent); }
+.alerte--pluie { --d: var(--d-pluie); }
+.alerte--uv { --d: var(--d-uv); }
+.alerte--poussiere { --d: var(--d-sable); }
+
+/* ------------------------------------------------------------ préparation */
+
+.prep-progression {
+  display: flex; align-items: center; gap: var(--e4);
+  padding: var(--e5);
+  border-radius: var(--r-lg);
+  background: linear-gradient(135deg, var(--kdl-bleu), #17415f);
+  color: #eaf4fa;
+  box-shadow: var(--ombre-2);
+  margin-bottom: var(--e5);
+}
+.prep-progression__anneau { position: relative; width: 74px; height: 74px; flex: none; }
+.prep-progression__anneau svg { transform: rotate(-90deg); }
+.prep-progression__pct {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  font-size: 1.05rem; font-weight: 730; letter-spacing: -0.03em;
+}
+
+.prep-groupe { margin-bottom: var(--e5); }
+.prep-groupe__titre {
+  display: flex; align-items: baseline; gap: var(--e2);
+  font-size: 1.02rem; font-weight: 680; margin-bottom: var(--e3);
+}
+.prep-groupe__compte { font-size: 0.8rem; color: var(--texte-faible); font-weight: 600; }
+
+.prep-item {
+  display: flex; align-items: flex-start; gap: var(--e3);
+  padding: var(--e3) var(--e4);
+  border: 1px solid var(--bordure);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  margin-bottom: var(--e2);
+  cursor: pointer;
+  transition: background var(--t-rapide), border-color var(--t-rapide);
+}
+.prep-item:hover { background: var(--surface-2); }
+.prep-item input { margin-top: 3px; width: 19px; height: 19px; accent-color: var(--n0); flex: none; cursor: pointer; }
+.prep-item__texte { min-width: 0; }
+/* Le nom et son explication sont deux lignes : en ligne continue, la liste
+   devenait un bloc de texte impossible à parcourir. */
+.prep-item__nom { display: block; font-weight: 640; transition: color var(--t-rapide); }
+.prep-item__detail { display: block; font-size: 0.86rem; color: var(--texte-doux); margin-top: 2px; }
+.prep-item[data-fait="true"] { background: var(--vert-voile); border-color: color-mix(in srgb, var(--vert) 26%, transparent); }
+.prep-item[data-fait="true"] .prep-item__nom { text-decoration: line-through; color: var(--texte-faible); }
+
+/* ------------------------------------------------------------- navigation */
+
+.nav {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  z-index: 50;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  backdrop-filter: blur(18px) saturate(1.4);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+  border-top: 1px solid var(--bordure);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.nav__lien {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 3px;
+  /* Cible tactile pleine, y compris sur un écran de 320 px : c'est la
+     navigation principale, elle se touche des dizaines de fois par jour. */
+  min-height: 44px;
+  padding: var(--e2) var(--e1);
+  border: 0;
+  background: none;
+  color: var(--texte-faible);
+  font-size: 0.73rem;
+  font-weight: 620;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  position: relative;
+  transition: color var(--t-rapide);
+}
+.nav__lien svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.nav__lien[aria-current="page"] { color: var(--cyan); font-weight: 720; }
+.nav__lien[aria-current="page"]::before {
+  content: "";
+  position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 26px; height: 2.5px;
+  border-radius: 0 0 3px 3px;
+  background: var(--cyan);
+}
+.nav__pastille {
+  position: absolute; top: 5px; right: calc(50% - 17px);
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--ambre-vif);
+  border: 2px solid var(--surface);
+}
+
+/* ----------------------------------------------------------------- divers */
+
+.bandeau {
+  display: flex; align-items: flex-start; gap: var(--e3);
+  padding: var(--e3) var(--e4);
+  border-radius: var(--r-md);
+  font-size: 0.88rem;
+  border: 1px solid;
+  margin-bottom: var(--e4);
+}
+/* Un message neutre reste neutre : la couleur est réservée à ce qui alerte. */
+.bandeau--info {
+  background: var(--surface-2);
+  border-color: var(--bordure);
+  border-left: 3px solid var(--ocean-vif);
+  color: var(--texte);
+}
+.bandeau--info svg { color: var(--ocean-vif); }
+.bandeau--attention {
+  background: color-mix(in srgb, var(--n1) 9%, var(--surface));
+  border-color: color-mix(in srgb, var(--n1-vif) 34%, transparent);
+  border-left: 3px solid var(--n1-vif);
+}
+.bandeau--attention svg { color: var(--n1); }
+.bandeau--alerte {
+  background: color-mix(in srgb, var(--n3) 10%, var(--surface));
+  border-color: color-mix(in srgb, var(--n3) 36%, transparent);
+  border-left: 3px solid var(--n3);
+}
+.bandeau--alerte svg { color: var(--n3); }
+.bandeau--hors-ligne { background: var(--surface-3); border-color: var(--bordure-forte); color: var(--texte-doux); }
+.bandeau svg { width: 18px; height: 18px; flex: none; margin-top: 2px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+.lien-officiel {
+  display: flex; align-items: center; gap: var(--e3);
+  padding: var(--e4);
+  border: 1px solid var(--bordure);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: inherit;
+  text-decoration: none;
+  margin-bottom: var(--e2);
+  transition: border-color var(--t-rapide), transform var(--t-rapide), box-shadow var(--t-normale);
+}
+.lien-officiel:hover { border-color: var(--ocean-vif); background: var(--ocean-voile); transform: translateX(3px); box-shadow: var(--ombre-1); }
+.lien-officiel__texte { min-width: 0; flex: 1; }
+.lien-officiel__nom { font-weight: 640; }
+.lien-officiel__note { font-size: 0.82rem; color: var(--texte-doux); }
+.lien-officiel svg { width: 18px; height: 18px; color: var(--texte-faible); flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+.bouton {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--e2);
+  min-height: 44px;
+  padding: 0 var(--e5);
+  border-radius: var(--r-md);
+  border: 1px solid var(--bordure-forte);
+  background: var(--surface-2);
+  font-weight: 640;
+  cursor: pointer;
+  transition: background var(--t-rapide), transform var(--t-rapide);
+}
+.bouton:hover { background: var(--surface-3); }
+.bouton:active { transform: scale(0.985); }
+.bouton--principal {
+  background: linear-gradient(140deg, var(--ocean-vif), var(--ocean));
+  border-color: var(--ocean);
+  color: #fff;
+  box-shadow: var(--ombre-1);
+}
+.bouton--principal:hover { background: linear-gradient(140deg, var(--cyan), var(--ocean-vif)); }
+
+.retour {
+  display: inline-flex; align-items: center; gap: var(--e2);
+  background: none; border: 0; padding: var(--e2) 0;
+  color: var(--texte-doux); font-weight: 620; font-size: 0.9rem; cursor: pointer;
+  margin-bottom: var(--e3);
+}
+.retour:hover { color: var(--texte); }
+.retour svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+
+.texte-officiel {
+  font-family: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.8rem;
+  line-height: 1.62;
+  white-space: pre-wrap;
+  color: var(--texte-doux);
+  max-height: 340px;
+  overflow-y: auto;
+  padding: var(--e4);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  border: 1px solid var(--bordure);
+}
+
+/* ---------------------------------------------------------- badge Bêta */
+
+/* Assumé mais discret : l'utilisateur doit savoir qu'il est sur une version
+   d'essai, sans que l'application ait l'air inachevée. */
+.badge-lab {
+  display: inline-block;
+  margin-left: var(--e2);
+  padding: 1px 6px;
+  border-radius: var(--r-sm);
+  /* L'ambre appartient à l'échelle de menace : un badge de version ne peut
+     pas l'emprunter. Il reste neutre, comme une mention d'édition. */
+  background: var(--surface-3);
+  border: 1px solid var(--bordure-forte);
+  color: var(--texte-doux);
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  vertical-align: 2px;
+}
+
+/* ------------------------------------------------ invitation à installer */
+
+.invitation {
+  margin-top: var(--e5);
+  padding: var(--e5);
+  border-radius: var(--r-lg);
+  border: 1px solid var(--bordure);
+  border-left: 3px solid var(--cyan-vif);
+  background: linear-gradient(120deg, var(--cyan-voile), transparent 62%), var(--surface);
+  box-shadow: var(--ombre-1);
+  display: grid;
+  gap: var(--e4);
+}
+.invitation__texte h3 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: var(--e2);
+}
+.invitation__texte p { color: var(--texte-doux); font-size: 0.94rem; max-width: 60ch; }
+.invitation__gages {
+  margin-top: var(--e3);
+  font-size: 0.8rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  color: var(--cyan) !important;
+}
+.invitation__actions { display: flex; flex-wrap: wrap; gap: var(--e2); }
+
+@media (min-width: 760px) {
+  .invitation { grid-template-columns: 1fr auto; align-items: center; }
+  .invitation__actions { flex-direction: column; }
+}
+
+/* --------------------------------------------------- signature KDLTech */
+
+/* Discrète par construction : pas de couleur d'accent, pas d'ombre portée,
+   pas d'appel à l'action agressif. Elle se lit, elle ne s'impose pas.
+   En vigilance élevée, elle disparaît (voir .signature[hidden] piloté en JS). */
+.signature {
+  margin-top: var(--e10);
+  padding: var(--e5);
+  border: 1px solid var(--bordure);
+  border-radius: var(--r-lg);
+  background: var(--surface-2);
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--e3) var(--e4);
+  align-items: center;
+}
+.signature[hidden] { display: none; }
+.signature__logo { width: 40px; height: 40px; border-radius: 10px; }
+.signature__texte { font-size: 0.9rem; color: var(--texte-doux); max-width: 62ch; }
+.signature__texte strong { color: var(--texte); font-weight: 650; }
+.signature__actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: var(--e2); }
+
+@media (min-width: 700px) {
+  .signature__actions { grid-column: 2; margin-top: var(--e1); }
+}
+
+.lien-texte {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--ocean-vif);
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.lien-texte:hover { color: var(--texte); }
+
+.bouton--discret {
+  /* Même cible que les autres boutons : « discret » qualifie l'apparence, pas
+     la facilité à l'atteindre au doigt. */
+  min-height: 44px;
+  padding: 0 var(--e4);
+  font-size: 0.88rem;
+  font-weight: 620;
+  background: transparent;
+  border-color: var(--bordure-forte);
+  color: var(--texte-doux);
+}
+.bouton--discret:hover { background: var(--surface-3); color: var(--texte); }
+
+.services { display: grid; gap: var(--e3); grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+.service {
+  padding: var(--e4);
+  border: 1px solid var(--bordure);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+}
+.service h4 { margin: 0 0 var(--e1); font-size: 0.98rem; font-weight: 660; letter-spacing: -0.01em; }
+.service p { font-size: 0.88rem; color: var(--texte-doux); }
+
+.contact-liste { display: grid; gap: var(--e2); }
+.contact-liste a, .contact-liste span {
+  display: flex; align-items: baseline; gap: var(--e3);
+  font-size: 0.94rem; color: inherit; text-decoration: none;
+}
+.contact-liste dt {
+  min-width: 118px; flex: none;
+  font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--texte-faible); font-weight: 650;
+}
+.contact-liste a:hover { color: var(--ocean-vif); }
+
+.pied {
+  margin-top: var(--e10);
+  padding-top: var(--e5);
+  border-top: 1px solid var(--bordure);
+  font-size: 0.82rem;
+  color: var(--texte-faible);
+}
+.pied a { color: var(--ocean-vif); }
+
+/* Message éphémère de confirmation — jamais bloquant, jamais commercial. */
+.signal {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--hauteur-nav) + var(--e4) + env(safe-area-inset-bottom));
+  transform: translate(-50%, 12px);
+  z-index: 60;
+  max-width: min(92vw, 420px);
+  padding: var(--e3) var(--e5);
+  border-radius: var(--r-pill);
+  background: var(--kdl-bleu-profond);
+  color: #eaf4fa;
+  font-size: 0.88rem;
+  box-shadow: var(--ombre-3);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--t-normale), transform var(--t-normale);
+}
+.signal[data-visible="true"] { opacity: 1; transform: translate(-50%, 0); }
+
+/* État vide : une phrase utile et une action, jamais « aucune donnée ». */
+.etat-vide {
+  display: grid; justify-items: center; gap: var(--e3);
+  padding: var(--e10) var(--e5);
+  text-align: center;
+  color: var(--texte-doux);
+}
+.etat-vide svg { width: 54px; height: 54px; color: var(--n0); opacity: 0.6; fill: none; stroke: currentColor; stroke-width: 1.2; }
+.etat-vide h3 { font-size: 1.1rem; color: var(--texte); }
+.etat-vide p { max-width: 44ch; font-size: 0.92rem; }
+
+/* Squelettes de chargement plutôt qu'une roue qui tourne. */
+.squelette {
+  border-radius: var(--r-md);
+  border: 1px solid var(--bordure);
+  background: linear-gradient(
+    100deg,
+    var(--surface-2) 28%,
+    color-mix(in srgb, var(--texte) 9%, var(--surface-3)) 50%,
+    var(--surface-2) 72%
+  );
+  background-size: 220% 100%;
+  animation: balayage 1.4s var(--ease) infinite;
+}
+@keyframes balayage { from { background-position: 180% 0; } to { background-position: -60% 0; } }
+.squelette--titre { height: 30px; width: 62%; margin-bottom: var(--e3); }
+.squelette--ligne { height: 15px; margin-bottom: var(--e2); }
+.squelette--carte { height: 88px; margin-bottom: var(--e2); }
+
+/* ------------------------------------------------------- écrans plus larges */
+
+@media (min-width: 860px) {
+  :root { --hauteur-nav: 0px; }
+  body { padding-bottom: 0; }
+
+  .nav {
+    position: sticky;
+    top: 0;
+    grid-template-columns: repeat(5, auto);
+    justify-content: center;
+    gap: var(--e2);
+    border-top: 0;
+    border-bottom: 1px solid var(--bordure);
+    padding: var(--e2);
+  }
+  .nav__lien {
+    grid-auto-flow: column;
+    align-items: center;
+    gap: var(--e2);
+    /* Même confort de visée qu'au doigt : une barre de navigation se clique
+       aussi sur une tablette posée à plat, et 44 px se pointent mieux. */
+    min-height: 44px;
+    padding: var(--e2) var(--e4);
+    border-radius: var(--r-pill);
+    font-size: 0.86rem;
+  }
+  .nav__lien[aria-current="page"] {
+    background: var(--cyan-voile);
+    color: var(--texte);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cyan) 30%, transparent);
+  }
+  .nav__lien[aria-current="page"]::before { display: none; }
+  .nav__pastille { top: 6px; right: 8px; }
+
+  .page { padding: var(--e8) var(--e6) var(--e12); }
+  .situation { padding: var(--e12) var(--e10); }
+}
+
+@media (max-width: 400px) {
+  .page { padding: var(--e4) var(--e3) var(--e8); }
+  .situation { padding: var(--e6) var(--e4); border-radius: var(--r-lg); }
+  .carte-bloc { padding: var(--e4); }
+  .systeme { grid-template-columns: auto 1fr; padding: var(--e3); }
+  .systeme__chevron { display: none; }
+  .nav__lien { font-size: 0.72rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media print {
+  .nav, .entete__actions, .carte-outils, .calques { display: none; }
+  body { background: #fff; padding: 0; }
+  .carte-bloc, .situation { box-shadow: none; border: 1px solid #ccc; }
+}
+
+/* ------------------------------------------------------- fraîcheur des données */
+
+/* Chaque valeur importante porte sa provenance et son âge. L'état se lit à la
+   couleur, mais jamais uniquement à la couleur : le libellé est toujours écrit. */
+.fraicheur {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--e3);
+  margin-top: var(--e4);
+  padding: var(--e3) var(--e4);
+  border-radius: var(--r-md);
+  border: 1px solid var(--bordure);
+  background: var(--surface-2);
+  font-size: 0.86rem;
+}
+.fraicheur__pastille {
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  margin-top: 6px;
+  flex: none;
+  background: var(--texte-faible);
+}
+.fraicheur b { display: block; font-weight: 650; }
+.fraicheur__detail { display: block; color: var(--texte-doux); font-size: 0.82rem; margin-top: 1px; }
+
+.fraicheur--ok .fraicheur__pastille { background: var(--vert); }
+.fraicheur--attente { border-color: color-mix(in srgb, var(--ambre-vif) 34%, transparent); background: var(--ambre-voile); }
+.fraicheur--attente .fraicheur__pastille { background: var(--ambre-vif); }
+.fraicheur--ancienne { border-color: color-mix(in srgb, var(--rouge) 34%, transparent); background: var(--rouge-voile); }
+.fraicheur--ancienne .fraicheur__pastille { background: var(--rouge); }
+
+.situation__fraicheur {
+  grid-column: 1 / -1;
+  margin-top: calc(var(--e3) * -1);
+  font-size: 0.82rem;
+  color: rgba(244, 245, 246, 0.6);
+}
+
+/* ------------------------------------------------------------- chronologie */
+
+.chronologie { list-style: none; margin: 0; padding: 0; }
+.chronologie__item {
+  position: relative;
+  padding: 0 0 var(--e4) var(--e6);
+  border-left: 2px solid var(--bordure);
+}
+.chronologie__item:last-child { padding-bottom: 0; border-left-color: transparent; }
+.chronologie__item::before {
+  content: "";
+  position: absolute;
+  left: -6px; top: 5px;
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 2px solid var(--bordure-forte);
+}
+.chronologie__item--majeur::before { border-color: var(--cyan); background: var(--cyan); }
+.chronologie__item time {
+  display: block;
+  font-size: 0.74rem;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--texte-faible);
+  margin-bottom: 2px;
+}
+.chronologie__item span { font-size: 0.92rem; }
+.chronologie__item--majeur span { font-weight: 620; }
+
+/* -------------------------------------------------------------- formulaires */
+
+.champ { display: block; margin-bottom: var(--e4); }
+.champ > span {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--texte-faible);
+  margin-bottom: var(--e2);
+}
+.champ input[type="text"],
+.champ input[type="email"],
+.champ select,
+.champ textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: var(--e3) var(--e4);
+  border: 1px solid var(--bordure-forte);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  color: var(--texte);
+  font: inherit;
+  font-size: 0.95rem;
+  transition: border-color var(--t-rapide), background var(--t-rapide);
+}
+.champ textarea { resize: vertical; line-height: 1.6; }
+.champ input:focus, .champ select:focus, .champ textarea:focus {
+  border-color: var(--cyan);
+  background: var(--surface);
+}
+.champ--case { display: flex; align-items: center; gap: var(--e3); }
+.champ--case input { width: 19px; height: 19px; accent-color: var(--cyan); flex: none; }
+.champ--case span {
+  text-transform: none; letter-spacing: 0; font-size: 0.94rem;
+  font-weight: 450; color: var(--texte); margin: 0;
+}
+
+/* Piège à robots : hors de vue et hors du parcours clavier, jamais annoncé
+   aux lecteurs d'écran. Un humain ne peut pas le remplir par accident. */
+.piege {
+  position: absolute;
+  left: -9999px;
+  width: 1px; height: 1px;
+  overflow: hidden;
+}
+
+/* ---------------------------------------------------------- feuille de partage */
+
+.replis {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: end center;
+  background: rgba(6, 26, 42, 0.55);
+  backdrop-filter: blur(3px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--t-normale);
+}
+.replis[data-visible="true"] { opacity: 1; pointer-events: auto; }
+
+.replis__panneau {
+  width: min(100%, 520px);
+  margin: var(--e4);
+  padding: var(--e6);
+  border-radius: var(--r-xl);
+  background: var(--surface);
+  border: 1px solid var(--bordure);
+  box-shadow: var(--ombre-3);
+  transform: translateY(14px);
+  transition: transform var(--t-normale);
+}
+.replis[data-visible="true"] .replis__panneau { transform: none; }
+.replis__panneau h3 { font-size: 1.15rem; margin-bottom: var(--e2); }
+.replis__panneau p { color: var(--texte-doux); font-size: 0.9rem; margin-bottom: var(--e5); }
+.replis__liste {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: var(--e2);
+  margin-bottom: var(--e4);
+}
+.replis__liste .bouton { width: 100%; text-decoration: none; }
+
+@media (min-width: 700px) {
+  .replis { place-items: center; }
+}
+
+/* --------------------------------------------------------- boucle satellite */
+
+.satellite-invite,
+.satellite {
+  margin-top: var(--e3);
+  padding: var(--e4);
+  border: 1px solid var(--bordure);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+.satellite-invite {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e3);
+}
+.satellite-invite b { display: block; font-weight: 650; font-size: 0.95rem; }
+.satellite-invite span { font-size: 0.85rem; color: var(--texte-doux); }
+
+.satellite__tete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e3);
+  margin-bottom: var(--e3);
+}
+.satellite__heure b {
+  display: block;
+  font-size: 1.02rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.satellite__heure span { font-size: 0.8rem; color: var(--texte-faible); font-variant-numeric: tabular-nums; }
+
+.satellite__transport {
+  display: flex;
+  align-items: center;
+  gap: var(--e2);
+  flex-wrap: wrap;
+}
+.satellite__transport input[type="range"] {
+  flex: 1 1 140px;
+  min-width: 120px;
+  accent-color: var(--cyan);
+  height: 28px;
+}
+
+.satellite__vitesses { display: flex; gap: 2px; }
+.bouton-vitesse {
+  min-width: 40px;
+  height: 34px;
+  padding: 0 var(--e2);
+  border: 1px solid var(--bordure);
+  background: var(--surface-2);
+  color: var(--texte-doux);
+  font-size: 0.8rem;
+  font-weight: 650;
+  cursor: pointer;
+  border-radius: var(--r-sm);
+  transition: background var(--t-rapide), color var(--t-rapide);
+}
+.bouton-vitesse:hover { background: var(--surface-3); }
+.bouton-vitesse.est-actif {
+  background: var(--cyan-voile);
+  border-color: color-mix(in srgb, var(--cyan) 40%, transparent);
+  color: var(--cyan);
+}
+
+.satellite__source {
+  margin-top: var(--e3);
+  font-size: 0.8rem;
+  color: var(--texte-faible);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e1) 6px;
+}
+
+/* Résumé textuel : la couleur et le mouvement ne suffisent jamais. */
+.satellite__resume {
+  margin-top: var(--e3);
+  padding-top: var(--e3);
+  border-top: 1px dashed var(--bordure);
+  font-size: 0.86rem;
+  color: var(--texte-doux);
+  max-width: 68ch;
+}
+
+/* ------------------------------------------------- panneau de calques replié */
+
+/* Sur un téléphone, une liste de six calques déployée recouvrait la carte
+   entière. Elle est donc repliée par défaut et s'ouvre à la demande. */
+.calques { padding: 0; }
+.calques__bascule {
+  display: flex;
+  align-items: center;
+  gap: var(--e2);
+  /* Zone tactile pleine : le panneau s'ouvre au doigt, pas au pixel près. */
+  min-height: 44px;
+  width: 100%;
+  padding: var(--e2) var(--e3);
+  border: 0;
+  background: none;
+  font-size: 0.82rem;
+  font-weight: 680;
+  color: #eef6fa;
+  cursor: pointer;
+  border-radius: var(--r-md);
+}
+.calques__bascule svg {
+  width: 15px; height: 15px;
+  fill: none; stroke: currentColor; stroke-width: 1.8;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+.calques__liste { display: none; padding: 0 var(--e2) var(--e2); }
+.calques[data-ouvert="true"] .calques__liste { display: grid; gap: 2px; }
+.calques[data-ouvert="true"] .calques__bascule { color: var(--cyan-vif); }
+
+/* Sur grand écran, la place ne manque pas : la liste reste dépliée. */
+@media (min-width: 1100px) {
+  .calques__bascule { display: none; }
+  .calques__liste { display: grid !important; gap: 2px; padding: var(--e2); }
+}
+
+/* ------------------------------------------------------------ grand écran */
+
+/* L'application est conçue pour le téléphone d'abord, mais elle doit aussi
+   tenir sur un 24 ou 27 pouces sans paraître perdue au milieu du vide. */
+@media (min-width: 1400px) {
+  :root { --largeur-max: 1340px; }
+
+  .situation { padding: var(--e12) var(--e12) var(--e10); }
+  .situation__titre { font-size: clamp(2.1rem, 2.6vw, 2.9rem); max-width: 26ch; }
+  .situation__detail { font-size: 1.1rem; }
+
+  /* Trois colonnes : le cadran, les systèmes, et les vigilances remontent
+     à côté au lieu de s'empiler sous la ligne de flottaison. */
+  .grille--accueil { grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.1fr); gap: var(--e6); }
+  .cadran-enveloppe { max-width: 420px; }
+
+  .stats { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+  .stat__valeur { font-size: 1.7rem; }
+
+  .carte-enveloppe { height: min(74vh, 760px) !important; }
+
+  /* La fiche d'un système se lit sur deux colonnes : les chiffres à gauche,
+     les explications à droite, sans ligne trop longue. */
+  .vue[data-vue="systeme"] .facteurs { grid-template-columns: 1fr 1fr; }
+  .facteur__corps { max-width: none; }
+}
+
+@media (min-width: 1800px) {
+  :root { --largeur-max: 1520px; }
+  .carte-enveloppe { height: min(76vh, 860px) !important; }
+  .vue[data-vue="systeme"] .facteurs { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* ------------------------------------------------------ choix du territoire */
+
+/* Discret dans l'en-tête, mais toujours à portée : l'utilisateur doit pouvoir
+   changer d'île sans chercher. */
+/* Choix du territoire : un vrai bouton, pas un badge décoratif. Toute la
+   surface ouvre la liste, la zone tactile fait 44 px, et le contrôle reste
+   présent même quand aucune donnée n'est encore arrivée. */
+.territoire {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--e2);
+  padding: 0 var(--e3);
+  height: 44px;
+  border: 1px solid var(--bordure-forte);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  box-shadow: var(--ombre-1);
+  cursor: pointer;
+  transition: border-color var(--t-rapide), background var(--t-rapide), box-shadow var(--t-rapide);
+}
+.territoire:hover { border-color: var(--cyan); background: var(--cyan-voile); }
+.territoire:active { transform: translateY(1px); }
+/* Le focus clavier se voit franchement : c'est le contrôle le plus utile de
+   l'en-tête. */
+.territoire:focus-within {
+  border-color: var(--cyan);
+  box-shadow: var(--halo-cyan);
+}
+
+.territoire__lieu {
+  width: 16px; height: 16px; flex: none;
+  fill: none; stroke: var(--cyan); stroke-width: 1.8;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+.territoire__intitule {
+  flex: none;
+  font-size: 0.73rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--texte-faible);
+}
+.territoire__chevron {
+  width: 16px; height: 16px; flex: none;
+  fill: none; stroke: var(--texte-doux); stroke-width: 2;
+  stroke-linecap: round; stroke-linejoin: round;
+  transition: transform var(--t-rapide);
+}
+.territoire:focus-within .territoire__chevron { transform: rotate(180deg); stroke: var(--cyan); }
+
+/* Le `select` couvre tout le contrôle : cliquer sur l'icône ou sur le libellé
+   ouvre la liste, pas seulement le texte. */
+.territoire select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+.territoire__valeur {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 0.9rem;
+  font-weight: 660;
+  color: var(--texte);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.territoire select:focus { outline: none; }
+
+/* Le menu déroulant natif est peint par le système, pas par la page : sans
+   couleurs explicites, les noms de territoires héritaient d'un texte clair sur
+   un fond transparent, donc blanc sur blanc en thème sombre. La liste
+   s'ouvrait, mais elle était illisible. */
+.territoire select option {
+  background-color: var(--surface);
+  color: var(--texte);
+}
+
+/* Sur téléphone, le sélecteur passe sur sa propre ligne : dans l'en-tête, il
+   recouvrait le nom de l'application. */
+#selecteur-territoire {
+  order: 3;
+  flex: 1 0 100%;
+  margin-top: var(--e2);
+}
+#selecteur-territoire .territoire { width: 100%; }
+.entete { flex-wrap: wrap; }
+.entete__actions { margin-left: auto; }
+
+@media (min-width: 620px) {
+  /* La place revient : le sélecteur remonte dans l'en-tête. */
+  #selecteur-territoire { order: 0; flex: 0 1 auto; margin: 0 0 0 auto; }
+  #selecteur-territoire .territoire { width: auto; }
+  /* Sur large écran, le nom ne doit pas pousser les actions hors de l'en-tête. */
+  #selecteur-territoire .territoire__valeur { max-width: 22vw; }
+  .entete__actions { margin-left: var(--e2); }
+}
+
+/* ----------------------------------------------------------------- météo */
+
+.picto {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Le bandeau du temps qu'il fait prend la couleur du ciel réel : un midi
+   dégagé et une nuit d'orage ne peuvent pas avoir le même fond. */
+.meteo-actuel {
+  --ciel-1: #3f7fb0;
+  --ciel-2: #1d4a6b;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: var(--e5);
+  padding: var(--e6);
+  margin-bottom: var(--e4);
+  border-radius: var(--r-xl);
+  background: linear-gradient(152deg, var(--ciel-1) 0%, var(--ciel-2) 100%);
+  color: #fbfcfd;
+  box-shadow: var(--ombre-2);
+}
+.meteo-actuel[data-ciel="jour-clair"]    { --ciel-1: #35a0d8; --ciel-2: #1b6ea8; }
+.meteo-actuel[data-ciel="jour-voile"]    { --ciel-1: #6f97b4; --ciel-2: #3e6684; }
+.meteo-actuel[data-ciel="couvert"]       { --ciel-1: #6b7075; --ciel-2: #3f4448; }
+.meteo-actuel[data-ciel="pluie"]         { --ciel-1: #3f5d7d; --ciel-2: #22303f; }
+.meteo-actuel[data-ciel="orage"]         { --ciel-1: #4a4368; --ciel-2: #221d33; }
+.meteo-actuel[data-ciel="nuit"]          { --ciel-1: #29394d; --ciel-2: #121a24; }
+.meteo-actuel[data-ciel="nuit-nuageuse"] { --ciel-1: #333c46; --ciel-2: #171b21; }
+
+/* Une seule lueur, posée derrière le pictogramme : le soleil ou la lune. */
+.meteo-actuel::after {
+  content: "";
+  position: absolute;
+  left: -60px; top: -70px;
+  width: 260px; height: 260px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0) 68%);
+  pointer-events: none;
+}
+.meteo-actuel > * { position: relative; z-index: 1; }
+
+.meteo-actuel__corps { min-width: 0; }
+
+/* Les repères de la journée occupent la droite du bandeau : plus de grande
+   surface vide à côté de la température. */
+.meteo-actuel__jour {
+  margin: 0 0 0 auto;
+  display: grid;
+  gap: var(--e2);
+  min-width: 190px;
+  padding-left: var(--e5);
+  border-left: 1px solid rgba(255, 255, 255, 0.18);
+  font-size: 0.88rem;
+}
+.meteo-actuel__jour > div { display: flex; align-items: baseline; justify-content: space-between; gap: var(--e3); }
+.meteo-actuel__jour dt { color: rgba(255, 255, 255, 0.66); }
+.meteo-actuel__jour dd { margin: 0; font-weight: 660; }
+.meteo-actuel__jour dd span { font-weight: 500; color: rgba(255, 255, 255, 0.66); }
+
+@media (max-width: 720px) {
+  .meteo-actuel { flex-wrap: wrap; }
+  .meteo-actuel__jour {
+    margin: var(--e3) 0 0;
+    width: 100%;
+    padding-left: 0;
+    padding-top: var(--e3);
+    border-left: 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.18);
+    grid-template-columns: 1fr 1fr;
+    gap: var(--e2) var(--e5);
+  }
+}
+
+.meteo-actuel__picto { color: rgba(255, 255, 255, 0.94); flex: none; }
+.meteo-actuel__temp {
+  font-size: 3.4rem;
+  font-weight: 760;
+  letter-spacing: -0.045em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.meteo-actuel__temp span { font-size: 1.3rem; font-weight: 600; opacity: 0.7; margin-left: 2px; }
+.meteo-actuel__desc { font-size: 1.08rem; font-weight: 640; margin-top: var(--e2); }
+.meteo-actuel__detail { font-size: 0.86rem; opacity: 0.82; margin-top: var(--e1); }
+
+/* Bande horaire : elle défile, elle ne déborde jamais de la page. */
+.meteo-heures {
+  display: flex;
+  gap: var(--e2);
+  overflow-x: auto;
+  padding-bottom: var(--e2);
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+}
+.meteo-heure {
+  flex: 0 0 62px;
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  padding: var(--e3) var(--e1);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  border: 1px solid var(--bordure);
+  scroll-snap-align: start;
+  color: var(--texte-doux);
+}
+.meteo-heure__h { font-size: 0.74rem; font-weight: 650; color: var(--texte-faible); }
+.meteo-heure .picto { color: var(--texte-doux); }
+/* Le pictogramme prend la couleur du phénomène : un soleil n'est pas une averse. */
+.meteo-heure[data-ciel="jour-clair"] .picto,
+.meteo-jour[data-ciel="jour-clair"] .picto { color: var(--d-soleil); }
+.meteo-heure[data-ciel="pluie"] .picto,
+.meteo-jour[data-ciel="pluie"] .picto { color: var(--d-pluie); }
+.meteo-heure[data-ciel="orage"] .picto,
+.meteo-jour[data-ciel="orage"] .picto { color: var(--d-uv); }
+.meteo-heure[data-ciel="nuit"] .picto,
+.meteo-heure[data-ciel="nuit-nuageuse"] .picto,
+.meteo-jour[data-ciel="nuit"] .picto { color: var(--kdl-encre); }
+.meteo-heure__t { font-size: 1rem; font-weight: 720; color: var(--texte); letter-spacing: -0.02em; }
+.meteo-heure__p { font-size: 0.72rem; color: var(--d-pluie); font-weight: 650; }
+.meteo-heure__p[data-sec="true"] { color: var(--texte-faible); font-weight: 600; }
+.meteo-heure__v { font-size: 0.72rem; color: var(--texte-faible); }
+
+/* La colonne de pluie se remplit comme un pluviomètre : on lit la journée
+   la plus arrosée sans comparer des pourcentages un à un. */
+.meteo-heure__jauge {
+  width: 100%; height: 3px;
+  border-radius: var(--r-pill);
+  background: var(--surface-3);
+  overflow: hidden;
+}
+.meteo-heure__jauge i { display: block; height: 100%; background: var(--d-pluie); }
+
+.meteo-jours { display: grid; gap: 2px; }
+.meteo-jour {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 52px minmax(60px, 120px) 76px;
+  align-items: center;
+  gap: var(--e3);
+  padding: var(--e3) var(--e2);
+  border-radius: var(--r-sm);
+}
+@media (max-width: 560px) {
+  .meteo-jour { grid-template-columns: minmax(0, 1fr) auto 52px 76px; }
+  .meteo-jour__reglette { display: none; }
+}
+.meteo-jour:nth-child(odd) { background: var(--surface-2); }
+.meteo-jour__nom { font-size: 0.92rem; font-weight: 600; text-transform: capitalize; }
+.meteo-jour .picto { color: var(--texte-doux); }
+.meteo-jour__pluie { font-size: 0.82rem; color: var(--d-pluie); text-align: right; font-weight: 650; font-variant-numeric: tabular-nums; }
+.meteo-jour__pluie[data-sec="true"] { color: var(--texte-faible); font-weight: 600; }
+.meteo-jour__temps { text-align: right; font-size: 0.98rem; font-variant-numeric: tabular-nums; }
+/* La température du jour se lit sur une réglette commune aux dix jours :
+   la vague de chaleur saute aux yeux, sans lire un seul chiffre. */
+.meteo-jour__reglette {
+  position: relative;
+  height: 5px;
+  border-radius: var(--r-pill);
+  background: var(--surface-3);
+  overflow: hidden;
+}
+.meteo-jour__reglette i {
+  position: absolute; top: 0; bottom: 0;
+  min-width: 6px;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--d-pluie) 0%, var(--d-soleil) 55%, var(--d-thermique) 100%);
+}
+.meteo-jour__temps b { font-weight: 730; }
+.meteo-jour__temps span { color: var(--texte-faible); font-weight: 500; }
+
+@media (max-width: 400px) {
+  .meteo-actuel { gap: var(--e3); padding: var(--e4); }
+  .meteo-actuel__temp { font-size: 2.6rem; }
+  .meteo-jour { grid-template-columns: minmax(0, 1fr) auto 44px 68px; gap: var(--e2); }
+  .meteo-jour__nom { font-size: 0.86rem; }
+}
+
+/* ------------------------------------------------------------- graphiques */
+
+/* Les tracés météo. Ils remplissent la largeur disponible et gardent leur
+   lisibilité de 320 px à un grand écran : le SVG est étiré, mais les textes
+   sont écrits à taille fixe dans le repère, donc jamais déformés. */
+.graphe {
+  margin: 0 0 var(--e4);
+  border-radius: var(--r-md);
+  background: linear-gradient(180deg, var(--surface-2), var(--surface));
+  border: 1px solid var(--bordure);
+  overflow: hidden;
+}
+.graphe svg {
+  display: block;
+  width: 100%;
+  height: clamp(150px, 26vw, 210px);
+}
+.graphe__heure {
+  font-size: 13px;
+  font-weight: 600;
+  fill: var(--texte-faible);
+  font-variant-numeric: tabular-nums;
+}
+.graphe__extreme {
+  font-size: 15px;
+  font-weight: 750;
+  fill: var(--d-thermique);
+  font-variant-numeric: tabular-nums;
+}
+.graphe__legende {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e2) var(--e4);
+  padding: var(--e2) var(--e4) var(--e3);
+  font-size: 0.76rem;
+  color: var(--texte-doux);
+  border-top: 1px solid var(--bordure);
+}
+.graphe__legende span { display: inline-flex; align-items: center; gap: 6px; }
+.graphe__legende i {
+  width: 12px; height: 4px;
+  border-radius: var(--r-pill);
+  display: inline-block;
+}
+.graphe__legende .graphe__nuit {
+  height: 12px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--ocean) 22%, transparent);
+}
+
+/* Bande horaire défilante : l'indice de glissement n'apparaît que là où le
+   défilement existe réellement, c'est-à-dire sur écran étroit. */
+.meteo-astuce {
+  color: var(--texte-faible);
+  font-size: 0.78rem;
+  margin-top: var(--e3);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e2) var(--e4);
+  align-items: center;
+}
+.meteo-astuce__glisser { display: none; }
+@media (max-width: 760px) {
+  .meteo-astuce__glisser {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--cyan);
+    font-weight: 650;
+  }
+  .meteo-astuce__glisser::after { content: "→"; }
+}
+
+/* Bord estompé à droite de la bande : on voit qu'il reste des heures. */
+.meteo-heures[data-defilante="true"] {
+  position: relative;
+  mask-image: linear-gradient(90deg, #000 0, #000 92%, transparent 100%);
+  -webkit-mask-image: linear-gradient(90deg, #000 0, #000 92%, transparent 100%);
+}
+@media (min-width: 1100px) {
+  .meteo-heures[data-defilante="true"] { mask-image: none; -webkit-mask-image: none; }
+}
+
+/* -------------------------------------------------- confort mobile et grand écran */
+
+/* Le bandeau d'accueil est le premier écran d'un téléphone : le détail y est
+   resserré pour que la valeur officielle arrive sans faire défiler trois fois. */
+@media (max-width: 600px) {
+  .situation { padding: var(--e5); gap: var(--e4); }
+  .situation__titre { font-size: clamp(1.4rem, 6.4vw, 1.8rem); }
+  .situation__detail { font-size: 0.94rem; max-width: none; }
+  .situation__pied { gap: var(--e3); font-size: 0.72rem; }
+  .cartouche { padding: var(--e4); }
+}
+
+/* Écran très étroit : la nav garde cinq entrées lisibles sans rogner le texte. */
+@media (max-width: 360px) {
+  .nav__lien { font-size: 0.72rem; padding: 0 2px; }
+  .nav__lien svg { width: 19px; height: 19px; }
+  .page { padding-left: var(--e3); padding-right: var(--e3); }
+  .stats { grid-template-columns: repeat(auto-fit, minmax(132px, 1fr)); }
+}
+
+/* Téléphone couché : la barre de navigation mangerait la moitié de la hauteur. */
+@media (orientation: landscape) and (max-height: 480px) {
+  .nav { padding-top: 2px; padding-bottom: 2px; }
+  .nav__lien { flex-direction: row; gap: var(--e2); font-size: 0.72rem; }
+  .situation { padding: var(--e4); }
+}
+
+/* Grand écran : la carte prend la largeur, sa fiche vient à côté plutôt que
+   dessous, et le texte garde une longueur de ligne lisible. */
+@media (min-width: 1500px) {
+  .page { max-width: 1420px; }
+  .vue[data-vue="carte"] .carte-enveloppe { height: clamp(560px, 70vh, 820px); }
+  .situation__detail { max-width: 62ch; }
+}
+
+/* Sur téléphone, les commandes de carte s'alignent horizontalement en haut :
+   empilées, elles occupaient un tiers de la hauteur utile et masquaient
+   l'Atlantique là où il faut justement regarder. */
+@media (max-width: 600px) {
+  .carte-outils {
+    top: var(--e2);
+    right: var(--e2);
+    left: auto;
+    grid-auto-flow: column;
+    gap: var(--e2);
+  }
+}
+
+/* ------------------------------------------------- fiche latérale de carte */
+
+/* Sur grand écran, lire le détail d'un système sans perdre la carte de vue.
+   En dessous de 1200 px, le panneau reste masqué : la fiche s'ouvre alors en
+   pleine vue, ce qui est la bonne réponse sur un téléphone. */
+.carte-agencement { display: block; }
+
+.carte-panneau { display: none; }
+
+@media (min-width: 1200px) {
+  .carte-agencement {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--e4);
+    align-items: start;
+  }
+  .carte-agencement[data-panneau="true"] {
+    grid-template-columns: minmax(0, 1fr) minmax(340px, 420px);
+  }
+  .carte-agencement[data-panneau="true"] .carte-panneau {
+    display: block;
+    position: relative;
+    max-height: clamp(360px, 62vh, 640px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: var(--e5);
+    border-radius: var(--r-lg);
+    background: var(--surface);
+    border: 1px solid var(--bordure);
+    box-shadow: var(--ombre-2);
+    animation: panneau-entre 220ms var(--ease);
+  }
+}
+
+@keyframes panneau-entre {
+  from { opacity: 0; transform: translateX(14px); }
+  to { opacity: 1; transform: none; }
+}
+
+.carte-panneau__fermer {
+  position: sticky;
+  top: 0;
+  float: right;
+  display: grid;
+  place-items: center;
+  width: 36px; height: 36px;
+  margin: calc(var(--e2) * -1) calc(var(--e2) * -1) 0 0;
+  border: 1px solid var(--bordure);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  color: var(--texte-doux);
+  cursor: pointer;
+  z-index: 2;
+}
+.carte-panneau__fermer:hover { background: var(--surface-3); color: var(--texte); }
+.carte-panneau__fermer svg {
+  width: 17px; height: 17px;
+  fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round;
+}
+
+/* Dans le panneau, les blocs de la fiche perdent leur cadre : ils sont déjà
+   dans un cadre. */
+.carte-panneau .carte-bloc {
+  border: 0;
+  box-shadow: none;
+  padding: 0 0 var(--e5);
+  border-bottom: 1px solid var(--bordure);
+  border-radius: 0;
+  margin-bottom: var(--e5) !important;
+}
+.carte-panneau .carte-bloc:last-child { border-bottom: 0; margin-bottom: 0 !important; }
+.carte-panneau .stats { grid-template-columns: 1fr 1fr; }
+
+/* Version installée, dans la page À propos : on doit pouvoir vérifier soi-même
+   quelle version on utilise, et en changer sans quitter la page. */
+.version-bloc {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e4);
+}
+.version-bloc b {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 750;
+  letter-spacing: -0.03em;
+  color: var(--kdl-analyse);
+}
+.version-bloc span {
+  display: block;
+  font-size: 0.86rem;
+  color: var(--texte-doux);
+  margin-top: 2px;
+}
+
+/* ------------------------------------------------------------- passerelle */
+
+/* Ouverture depuis Facebook, Messenger, TikTok… Ces navigateurs intégrés ne
+   savent pas installer une application web : on propose le seul chemin qui
+   marche, sans jamais promettre l'impossible ni bloquer l'accès aux données. */
+.passerelle {
+  margin-top: var(--e5);
+  padding: var(--e5);
+  border-radius: var(--r-lg);
+  border: 1px solid color-mix(in srgb, var(--cyan) 34%, var(--bordure));
+  background:
+    radial-gradient(600px 300px at 8% -30%, var(--cyan-voile) 0%, transparent 60%),
+    var(--surface);
+  box-shadow: var(--ombre-2);
+}
+
+.passerelle__tete { display: flex; gap: var(--e4); align-items: flex-start; }
+.passerelle__pastille {
+  display: grid; place-items: center;
+  width: 40px; height: 40px; flex: none;
+  border-radius: 50%;
+  color: var(--cyan);
+  background: var(--cyan-voile);
+}
+.passerelle__pastille svg {
+  width: 21px; height: 21px;
+  fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round;
+}
+.passerelle h3 {
+  font-size: 1.12rem;
+  font-weight: 720;
+  letter-spacing: -0.02em;
+  margin-bottom: var(--e2);
+}
+.passerelle p { color: var(--texte-doux); font-size: 0.94rem; max-width: 60ch; }
+
+.passerelle__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e2);
+  margin-top: var(--e4);
+}
+.passerelle__actions .bouton { text-decoration: none; }
+
+.passerelle__aide {
+  margin-top: var(--e3);
+  padding: var(--e3) var(--e4);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  border-left: 3px solid var(--cyan);
+  font-size: 0.9rem !important;
+}
+.passerelle__note {
+  margin-top: var(--e3);
+  font-size: 0.84rem !important;
+  color: var(--texte-faible) !important;
+}
+
+@media (max-width: 480px) {
+  .passerelle__actions .bouton { flex: 1 1 100%; }
+}

@@ -1,0 +1,27 @@
+{
+  "name": "kdl-cyclone",
+  "version": "0.10.0",
+  "private": true,
+  "description": "KDL Cyclone — Veille tropicale pour la Guadeloupe et les Petites Antilles",
+  "author": "KDLTech (Guadeloupe)",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node demarrer.mjs",
+    "local:start": "node demarrer.mjs",
+    "collect": "node src/collector.js --once",
+    "test": "node --test test/*.test.js",
+    "geo:build": "node scripts/build-geo.mjs",
+    "qa": "node --experimental-websocket scripts/qa-navigateur.mjs",
+    "qa:hors-ligne": "node --experimental-websocket scripts/qa-hors-ligne.mjs",
+    "qa:pwa": "node --experimental-websocket scripts/audit-pwa.mjs",
+    "qa:carte": "node --experimental-websocket scripts/qa-carte-animee.mjs",
+    "qa:grand-ecran": "node --experimental-websocket scripts/qa-grand-ecran.mjs",
+    "media-kit": "python3 scripts/build-media-kit.py"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

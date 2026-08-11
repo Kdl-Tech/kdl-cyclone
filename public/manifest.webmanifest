@@ -1,0 +1,120 @@
+{
+  "name": "KDL Cyclone — Veille Antilles",
+  "short_name": "KDL Cyclone",
+  "description": "Veille tropicale pour la Guadeloupe et les Petites Antilles. Suivez les ondes tropicales, comprenez leur potentiel d'évolution et préparez-vous. Bêta publique du KDL Lab, par KDLTech. Comprendre tôt. Se préparer calmement.",
+  "lang": "fr",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#eaf1f7",
+  "theme_color": "#1f5278",
+  "categories": [
+    "weather",
+    "utilities",
+    "news"
+  ],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Mode préparation",
+      "short_name": "Préparation",
+      "description": "Liste de préparation, disponible hors connexion",
+      "url": "/preparation",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Carte de l'Atlantique",
+      "short_name": "Carte",
+      "url": "/carte",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Installer l'application",
+      "short_name": "Installer",
+      "description": "Installer gratuitement KDL Cyclone",
+      "url": "/installer",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
+  "id": "/",
+  "display_override": [
+    "window-controls-overlay",
+    "standalone",
+    "minimal-ui"
+  ],
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
+  "screenshots": [
+    {
+      "src": "/screenshots/apercu-mobile-clair.png",
+      "sizes": "780x1688",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Météo locale détaillée, en thème clair"
+    },
+    {
+      "src": "/screenshots/apercu-mobile-sombre.png",
+      "sizes": "780x1688",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Carte de l'Atlantique tropical, en thème sombre"
+    },
+    {
+      "src": "/screenshots/apercu-accueil-clair.png",
+      "sizes": "1600x1111",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Situation générale et systèmes suivis"
+    },
+    {
+      "src": "/screenshots/apercu-carte-sombre.png",
+      "sizes": "1600x1000",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Carte cyclonique avec zones et trajectoires officielles"
+    }
+  ]
+}

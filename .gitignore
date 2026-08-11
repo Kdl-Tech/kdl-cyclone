@@ -1,0 +1,69 @@
+# Dépendances et artefacts d'exécution
+node_modules/
+.pnp/
+.yarn/
+
+# Données collectées et état de l'application : produits à l'exécution,
+# volumineux, et sans intérêt hors de la machine qui les a produits.
+data/
+*.sqlite
+*.sqlite3
+*.db
+
+# Secrets — aucun de ces fichiers ne doit jamais partir dans un dépôt
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*.keystore
+*.jks
+id_rsa*
+id_ed25519*
+known_hosts
+.netrc
+.npmrc
+secrets/
+coffre/
+
+# Infrastructure : scripts et configurations qui décrivent le serveur de
+# production. Ils vivent dans le dépôt privé, jamais ici.
+scripts/deployer.sh
+scripts/purger-cache.py
+integration-site/
+*.conf.local
+deploy.env
+
+# Journaux et fichiers temporaires
+*.log
+logs/
+tmp/
+.cache/
+*.tmp
+*.swp
+*~
+
+# Sauvegardes
+*.bak
+*.bak-*
+*.orig
+*.rej
+sauvegardes/
+backups/
+*.tar.gz
+*.zip
+
+# Captures de travail : celles du dépôt sont dans public/screenshots,
+# les campagnes de contrôle restent locales.
+captures/
+kdl-cyclone-captures/
+
+# Systèmes d'exploitation et éditeurs
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.sublime-*

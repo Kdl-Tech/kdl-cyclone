@@ -1,0 +1,55 @@
+Copyright (c) 2026 KDLTech — Karim De Lucia, Les Abymes, Guadeloupe.
+Tous droits réservés. / All rights reserved.
+
+FRANÇAIS
+
+Le code de KDL Cyclone est publié ici pour être consultable : n'importe qui
+peut le lire, l'étudier, vérifier comment les données officielles sont
+traitées et comment l'analyse expérimentale est calculée. C'est une exigence
+de transparence, pas une cession de droits.
+
+Aucune licence d'utilisation, de modification, de redistribution ou
+d'exploitation commerciale n'est accordée à ce stade. Les droits d'auteur
+restent intégralement détenus par KDLTech.
+
+Sont exclus de cette réserve, et gardent leurs propres conditions :
+
+  · la fonte Inter, sous SIL Open Font License 1.1 (assets/fonts/) ;
+  · les données du National Hurricane Center et de la NOAA, domaine public ;
+  · les données Open-Meteo, sous CC BY 4.0 ;
+  · les fonds de carte Natural Earth, domaine public.
+
+Le nom « KDLTech », le nom « KDL Cyclone », le logo et l'identité visuelle ne
+peuvent être utilisés par un projet tiers, ni pour le désigner, ni pour laisser
+entendre une affiliation.
+
+Pour toute demande d'utilisation : https://kdl-tech.fr/carte.html
+
+Une licence ouverte pourra être choisie ultérieurement. Tant qu'elle n'est pas
+publiée dans ce fichier, aucun droit n'est concédé.
+
+ENGLISH
+
+The KDL Cyclone source code is published here so that it can be inspected:
+anyone may read it, study it, and verify how official data is processed and how
+the experimental analysis is computed. This is a transparency commitment, not a
+grant of rights.
+
+No licence to use, modify, redistribute or commercially exploit this software
+is granted at this stage. All copyright remains with KDLTech.
+
+Excluded from this reservation, under their own terms:
+
+  · the Inter typeface, SIL Open Font License 1.1 (assets/fonts/);
+  · National Hurricane Center and NOAA data, public domain;
+  · Open-Meteo data, CC BY 4.0;
+  · Natural Earth basemaps, public domain.
+
+The names "KDLTech" and "KDL Cyclone", the logo and the visual identity may not
+be used by third-party projects, whether to designate them or to suggest any
+affiliation.
+
+Usage requests: https://kdl-tech.fr/carte.html
+
+An open licence may be adopted later. Until one is published in this file, no
+rights are granted.
