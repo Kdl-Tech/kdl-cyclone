@@ -4,6 +4,27 @@ Les dates sont celles du déploiement en production. La version installée est
 lisible sur [`/version.json`](https://cyclone.kdl-tech.fr/version.json) et dans
 la page À propos de l'application.
 
+## 0.14.2 — 14 août 2026
+
+**Le bouton de mise à jour n'apparaissait presque jamais.** Un visiteur revenu
+après une nouvelle publication restait sur l'ancienne version sans rien pour en
+sortir : il fallait vider le cache du navigateur à la main. On ne peut demander
+cela à personne, et surtout pas un jour d'alerte.
+
+La détection guettait deux moments précis de la vie du service worker, qui ne
+se produisaient pratiquement jamais — celui-ci prend la main dès son
+installation et ne passe donc pas par l'état attendu. S'y ajoutait une course
+au chargement : l'ancienne version servait le programme depuis sa mémoire
+pendant que la page, elle, arrivait du réseau. Le visiteur se retrouvait alors
+avec la nouvelle page et l'ancien programme, l'état exact où plus aucun bouton
+ne pouvait apparaître.
+
+La page et le programme portent désormais chacun le numéro de version qui les a
+produits. Deux numéros différents ne peuvent signifier qu'une chose, et la
+comparaison est refaite à l'ouverture, toutes les demi-heures, et chaque fois
+que l'onglet revient au premier plan : un onglet resté ouvert pendant un
+épisode cyclonique apprend donc qu'une version corrigée existe.
+
 ## 0.14.0 — 14 août 2026
 
 **Les rafales prévues, la grandeur qu'aucune station antillaise ne mesure.**

@@ -3734,6 +3734,63 @@
   window.addEventListener('appinstalled', function () { mesurer('installation_pwa'); });
   window.addEventListener('error', function () { mesurer('erreur_technique'); });
 
+  /* ------------------------------------------- détection de mise à jour */
+
+  /**
+   * Version qui a produit ce fichier. Le serveur la remplace à la volée ; un
+   * exemplaire sorti d'un cache périmé porte donc l'ancienne valeur.
+   */
+  var VERSION_APP = '__VERSION__';
+
+  /**
+   * Le visiteur exécute-t-il une version dépassée ?
+   *
+   * Ne rien demander au service worker : c'est justement là que le compte n'y
+   * était pas. Comme il appelle `skipWaiting()` dès son installation, il ne
+   * passe jamais par l'état « en attente » et l'état « installé » est trop
+   * fugace pour être saisi de façon fiable. Les deux signaux sur lesquels
+   * reposait l'affichage du bouton ne se produisaient donc pratiquement
+   * jamais.
+   *
+   * Pire, une course s'installait au chargement : l'ancien service worker
+   * servait `app.js` depuis son cache pendant que le document, lui, arrivait
+   * du réseau. Le visiteur se retrouvait avec le nouveau document et l'ancien
+   * script, sans aucun bouton pour s'en sortir — il fallait vider le cache à
+   * la main, ce qu'on ne peut demander à personne, encore moins un jour
+   * d'alerte.
+   *
+   * La comparaison ci-dessous ne dépend d'aucun de ces mécanismes : le
+   * document est toujours servi par le réseau, le script porte la version qui
+   * l'a produit, et deux valeurs différentes signifient exactement une chose.
+   */
+  function versionDepassee() {
+    var duDocument = document.documentElement.dataset.version;
+    if (!duDocument || !VERSION_APP || VERSION_APP.indexOf('__') === 0) return false;
+    return duDocument !== VERSION_APP;
+  }
+
+  /** Compare la version exécutée à celle que le serveur publie maintenant. */
+  function surveillerVersion() {
+    if (versionDepassee()) { proposerMiseAJour(null); return; }
+    versionServeur().then(function (v) {
+      if (v && v.version && VERSION_APP.indexOf('__') !== 0 && v.version !== VERSION_APP) {
+        proposerMiseAJour(null);
+      }
+    });
+  }
+
+  // La surveillance ne dépend pas du service worker : elle vaut aussi pour un
+  // navigateur qui n'en gère pas, et c'est elle qui porte la détection.
+  window.addEventListener('load', function () {
+    // Un onglet laissé ouvert pendant un épisode cyclonique doit apprendre
+    // qu'une version corrigée existe, sans que personne ait à recharger.
+    surveillerVersion();
+    setInterval(surveillerVersion, 30 * 60 * 1000);
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) surveillerVersion();
+    });
+  });
+
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {
       navigator.serviceWorker.register('/sw.js').then(function (enr) {

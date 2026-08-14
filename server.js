@@ -138,7 +138,10 @@ function pageHtml(chemin, etatCourantValeur, canoniqueForcee) {
 
   return GABARIT
     .replace('<!--KDL_META-->', balises(page, canoniqueForcee || chemin))
-    .replace('<html lang="fr"', `<html lang="fr" data-route="${page.vue}"`);
+    // La version voyage dans le document, qui est toujours servi par le réseau.
+    // C'est elle qui permet à l'application de s'apercevoir que le script
+    // qu'elle exécute vient d'un cache périmé.
+    .replace('<html lang="fr"', `<html lang="fr" data-route="${page.vue}" data-version="${VERSION}" data-build="${BUILD}"`);
 }
 
 /**
@@ -598,6 +601,20 @@ const serveur = http.createServer(async (req, res) => {
         versionMinimale: VERSION_MINIMALE,
         cache: `kdl-cyclone-${VERSION}-${BUILD}`,
       }, 200, 'no-store');
+    }
+
+    // Le script principal porte la version qui l'a produit. Servi depuis un
+    // cache périmé, il annoncera donc une version différente de celle du
+    // document : c'est ce décalage, et lui seul, qui révèle de façon certaine
+    // qu'une mise à jour n'est pas encore arrivée jusqu'au visiteur.
+    if (chemin === '/js/app.js') {
+      const source = await fsp.readFile(path.join(PUBLIC, 'js/app.js'), 'utf8');
+      return repondre(req, res, {
+        corps: source.replace(/__VERSION__/g, VERSION).replace(/__BUILD__/g, BUILD),
+        type: TYPES_MIME['.js'],
+        cache: 'no-cache',
+        etag: `"${VERSION}-${BUILD}"`,
+      });
     }
 
     // ---- Fichiers statiques
