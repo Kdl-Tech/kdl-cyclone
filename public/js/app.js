@@ -1838,16 +1838,31 @@
    * lit une information de sécurité.
    */
   function proposerMiseAJour(enregistrement) {
-    if (periodeSensible()) {
-      setTimeout(function () { proposerMiseAJour(enregistrement); }, 5 * 60 * 1000);
-      return;
-    }
     var zone = $('#bandeau-maj');
     if (!zone || zone.dataset.propose === 'true') return;
     zone.dataset.propose = 'true';
-    zone.innerHTML = '<div class="bandeau bandeau--info">' + ICONES.info
-      + '<div style="flex:1">Une nouvelle version de KDL Cyclone est disponible.</div>'
-      + '<button class="bouton bouton--principal" type="button" id="appliquer-maj">Mettre à jour</button>'
+
+    // La proposition n'est plus jamais différée.
+    //
+    // Elle l'était de cinq minutes en cinq minutes tant que le risque restait
+    // « préparation » ou « imminent », pour ne pas distraire pendant une
+    // alerte. L'intention était juste, l'effet inverse du but : c'est
+    // précisément pendant un épisode cyclonique qu'un correctif compte, et le
+    // report pouvait durer aussi longtemps que l'épisode lui-même.
+    //
+    // Le compromis retenu : toujours visible, mais discret quand une alerte
+    // est en cours — la mise à jour ne doit pas rivaliser d'attention avec la
+    // situation elle-même.
+    var sensible = periodeSensible();
+    zone.innerHTML = '<div class="bandeau ' + (sensible ? 'bandeau--discret' : 'bandeau--info') + '">'
+      + ICONES.info
+      + '<div class="bandeau__texte">'
+      + (sensible
+        ? 'Une version corrigée est disponible.'
+        : 'Une nouvelle version de KDL Cyclone est disponible.')
+      + '</div>'
+      + '<button class="bouton' + (sensible ? ' bouton--discret' : ' bouton--principal')
+      + '" type="button" id="appliquer-maj">Mettre à jour</button>'
       + '</div>';
   }
 

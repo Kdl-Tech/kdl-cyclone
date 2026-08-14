@@ -4,6 +4,18 @@ Les dates sont celles du déploiement en production. La version installée est
 lisible sur [`/version.json`](https://cyclone.kdl-tech.fr/version.json) et dans
 la page À propos de l'application.
 
+## 0.14.3 — 14 août 2026
+
+**La proposition de mise à jour ne se cache plus pendant une alerte.** Elle
+était repoussée de cinq minutes en cinq minutes tant qu'un danger était en
+cours, pour ne pas distraire. L'intention était juste, l'effet inverse du but :
+c'est précisément pendant un épisode cyclonique qu'une correction compte, et le
+report pouvait durer aussi longtemps que l'épisode.
+
+Elle s'affiche désormais sans délai. Pendant une alerte, elle prend une forme
+discrète — texte court, fond sobre — car elle ne doit pas rivaliser d'attention
+avec la situation elle-même, sans pour autant disparaître.
+
 ## 0.14.2 — 14 août 2026
 
 **Le bouton de mise à jour n'apparaissait presque jamais.** Un visiteur revenu

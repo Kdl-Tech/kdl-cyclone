@@ -1165,6 +1165,22 @@ button { font: inherit; color: inherit; }
 }
 .bandeau--alerte svg { color: var(--n3); }
 .bandeau--hors-ligne { background: var(--surface-3); border-color: var(--bordure-forte); color: var(--texte-doux); }
+
+/* Occupe la place restante entre l'icône et le bouton.
+   En classe et non en style inline : la politique de contenu ignore les
+   attributs `style`, et le texte se retrouvait collé au bouton. */
+.bandeau__texte { flex: 1; }
+
+/* Bandeau de mise à jour pendant une alerte : présent, lisible, mais qui ne
+   dispute pas l'attention à la situation elle-même. */
+.bandeau--discret {
+  background: var(--surface-2);
+  border-color: var(--bordure);
+  color: var(--texte-doux);
+  font-size: 0.9rem;
+}
+
+.bandeau--discret svg { color: var(--texte-faible); }
 .bandeau svg { width: 18px; height: 18px; flex: none; margin-top: 2px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 
 .lien-officiel {
