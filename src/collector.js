@@ -21,6 +21,12 @@ import { rafraichirCartes } from './social.js';
 import { rafraichirBoucle, SECTEURS, CANAUX } from './sources/satellite.js';
 import { mettreAJour as majSlugs, slugDe } from './slugs.js';
 import { fetchBulletin } from './sources/meteo.js';
+import {
+  vigilances,
+  observationsTerritoire,
+  DEPARTEMENTS,
+  configuree as meteoFranceConfiguree,
+} from './sources/meteofrance.js';
 import { territoiresEvalues, territoire, liensOfficiels, avertissementOfficiel, TERRITOIRE_DEFAUT } from './territoires.js';
 import { fraicheur, detecterChangements, detecterDisparitions, consigner, lireJournal, chronologie, ETATS } from './journal.js';
 
@@ -45,8 +51,25 @@ const SOURCES = [
     cle: 'meteofrance',
     nom: 'Météo-France',
     url: 'https://vigilance.meteofrance.fr/fr/guadeloupe',
-    licence: 'Lien officiel — non intégré',
-    role: "Vigilance officielle : seule référence pour l'alerte",
+    licence: 'Licence Ouverte 2.0 (Etalab)',
+    role: "Vigilance officielle (seule référence pour l'alerte) et mesures des stations",
+  },
+  // Ces deux sources étaient utilisées sans figurer dans la liste : la boucle
+  // satellite et le fond de carte. Une provenance incomplète est une
+  // provenance fausse — tout ce qui s'affiche doit pouvoir être attribué.
+  {
+    cle: 'satellite',
+    nom: 'GOES-19 (NOAA / NESDIS)',
+    url: 'https://www.star.nesdis.noaa.gov/goes/',
+    licence: 'Domaine public (gouvernement des États-Unis)',
+    role: 'Imagerie satellite et boucle animée du bassin',
+  },
+  {
+    cle: 'naturalearth',
+    nom: 'Natural Earth',
+    url: 'https://www.naturalearthdata.com/',
+    licence: 'Domaine public',
+    role: 'Fond de carte (côtes et frontières), embarqué dans l\'application',
   },
 ];
 
@@ -54,6 +77,23 @@ const SOURCES = [
 export async function collecter() {
   const debut = Date.now();
   const degradations = [];
+
+  // Vigilance officielle française. Volontairement isolée du reste : si elle
+  // échoue, la veille continue sur le NHC. Une couche officielle absente se
+  // signale, elle ne fait pas tomber l'application.
+  const mf = await vigilances().catch((e) => ({
+    disponible: false,
+    motif: e.message,
+    parTerritoire: {},
+  }));
+  // Une souscription absente (401/403) n'est pas une dégradation : rien n'est
+  // tombé, l'accès n'a simplement jamais été accordé. L'annoncer comme une
+  // panne ferait clignoter un avertissement permanent dans l'interface et
+  // finirait par rendre les vrais avertissements invisibles. L'information
+  // reste lisible dans l'état de la source, à sa juste place.
+  if (!mf.disponible && mf.motif && mf.motif !== 'jeton non configuré' && !mf.definitif) {
+    degradations.push(`Météo-France : ${mf.motif}`);
+  }
 
   const nhc = await collecterNhc().catch((e) => {
     degradations.push(`NHC injoignable : ${e.message}`);
@@ -188,6 +228,23 @@ export async function collecter() {
 
   // Menace par territoire. Le moteur acceptait déjà n'importe quelle cible :
   // on l'exécute simplement pour chacun des territoires suivis, au lieu de la
+  // Observations mesurées par Météo-France, là où elle en publie.
+  //
+  // Appelé à chaque collecte sans crainte : le module garde son propre cache
+  // horaire, aligné sur la cadence de publication des stations. Un seul
+  // téléchargement par heure et par département en découle, quel que soit le
+  // nombre de collectes ou de visiteurs.
+  const observations = {};
+  for (const t of territoiresEvalues()) {
+    if (!DEPARTEMENTS[t.cle]) continue;
+    const o = await observationsTerritoire(t.cle, { lat: t.lat, lon: t.lon })
+      .catch((e) => ({ disponible: false, motif: e.message }));
+    if (o.disponible) observations[t.cle] = o;
+    else if (o.motif && o.motif !== 'jeton non configuré' && !o.definitif) {
+      degradations.push(`observations ${t.nom} : ${o.motif}`);
+    }
+  }
+
   // seule Guadeloupe. C'est ce qui permet à un Martiniquais ou à un habitant
   // de Sainte-Lucie de lire une situation qui le concerne vraiment.
   const territoires = territoiresEvalues();
@@ -267,9 +324,14 @@ export async function collecter() {
         .filter((s) => s.menace && s.menace.niveau !== 'aucun')
         .map((s) => ({ id: s.id, nom: s.nom || s.designation, niveau: s.menace.niveau })),
       vigilanceOfficielle: {
-        integree: false,
-        raison:
-          "L'API de vigilance de Météo-France demande un jeton d'accès. KDL Cyclone renvoie donc directement vers la page officielle plutôt que d'afficher une information de seconde main.",
+        // Bloc historique, conservé pour les clients antérieurs au
+        // multi-territoires. La vigilance réelle vit désormais dans
+        // `territoires[].vigilanceOfficielle`.
+        ...(mf.parTerritoire?.guadeloupe || {}),
+        integree: Boolean(mf.parTerritoire?.guadeloupe),
+        raison: mf.parTerritoire?.guadeloupe
+          ? 'Vigilance officielle Météo-France, relayée telle quelle. Les liens ci-dessous restent la référence en cas d\'alerte.'
+          : "La vigilance de Météo-France n'est pas disponible pour le moment. KDL Cyclone renvoie vers la page officielle plutôt que d'afficher une information de seconde main.",
         liens: [
           { libelle: 'Vigilance Météo-France Guadeloupe', url: 'https://vigilance.meteofrance.fr/fr/guadeloupe' },
           { libelle: 'Météo-France Antilles', url: 'https://meteofrance.gp/' },
@@ -312,6 +374,13 @@ export async function collecter() {
           })),
         conditions: conditionsTerritoires[t.cle]?.meteo || null,
         mer: conditionsTerritoires[t.cle]?.mer || null,
+        // Vigilance officielle : relayée telle quelle, jamais recalculée, et
+        // seulement là où Météo-France est compétente. Les territoires non
+        // français n'en reçoivent aucune — c'est la règle vitale du projet.
+        vigilanceOfficielle: mf.parTerritoire?.[t.cle] || null,
+        // Mesures réelles des stations, à ne jamais confondre avec les
+        // prévisions de modèle affichées à côté.
+        observations: observations[t.cle] || null,
         liens: liensOfficiels(t.cle),
         avertissement: avertissementOfficiel(t.cle),
       };
@@ -332,7 +401,7 @@ export async function collecter() {
     outlookOfficiel: outlook,
     sources: SOURCES.map((s) => ({
       ...s,
-      etat: etatSource(s.cle, nhc, local, degradations),
+      etat: etatSource(s.cle, nhc, local, degradations, mf, observations, satellite),
     })),
     // Fraîcheur : ce que l'interface affiche à côté de chaque valeur importante.
     // Le Tropical Weather Outlook paraît quatre fois par jour, à 00, 06, 12 et
@@ -672,8 +741,45 @@ function resumeSituation(systemes, risque) {
   };
 }
 
-function etatSource(cle, nhc, local, degradations) {
-  if (cle === 'meteofrance') return { disponible: true, mode: 'lien officiel' };
+function etatSource(cle, nhc, local, degradations, mf, observations, satellite) {
+  // Fond de carte : fichiers embarqués, servis par l'application elle-même.
+  // Il ne dépend d'aucun réseau, donc il ne tombe jamais.
+  if (cle === 'naturalearth') return { disponible: true, mode: 'embarqué' };
+
+  if (cle === 'satellite') {
+    const nb = satellite?.images?.length || 0;
+    return {
+      disponible: Boolean(satellite?.ok && nb),
+      mode: satellite?.ok && nb ? `boucle de ${nb} images` : (satellite?.erreur || 'indisponible'),
+      emisLe: satellite?.derniereImage || null,
+    };
+  }
+
+  if (cle === 'meteofrance') {
+    // Sans jeton, la source reste ce qu'elle était : un lien vers l'autorité.
+    // C'est une configuration absente, pas une panne — l'interface ne doit pas
+    // afficher une alerte technique pour ça.
+    if (!meteoFranceConfiguree()) return { disponible: true, mode: 'lien officiel' };
+
+    // Deux volets indépendants, et ils ne vont pas toujours ensemble : le
+    // compte peut être abonné aux observations sans l'être à la vigilance.
+    const nbObservations = Object.keys(observations || {}).length;
+    const volets = [];
+    if (mf?.disponible) volets.push(mf.perime ? 'dernière vigilance connue' : 'vigilance officielle');
+    if (nbObservations) volets.push(`observations (${nbObservations} territoire(s))`);
+
+    if (volets.length) {
+      return {
+        disponible: true,
+        mode: volets.join(' + '),
+        emisLe: mf?.emisLe || null,
+        // Dit explicitement ce qui manque, pour que la page Sources soit
+        // honnête plutôt que muette.
+        vigilance: mf?.disponible ? 'intégrée' : (mf?.motif || 'indisponible'),
+      };
+    }
+    return { disponible: false, mode: mf?.motif || 'indisponible' };
+  }
   if (cle === 'nhc') {
     const ko = degradations.some((d) => d.startsWith('NHC') || d.includes('TWO') || d.includes('systèmes actifs'));
     return { disponible: !ko, mode: ko ? 'partiel' : 'complet', emisLe: nhc.emisLe || null };

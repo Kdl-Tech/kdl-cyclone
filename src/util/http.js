@@ -10,14 +10,50 @@
  */
 import crypto from 'node:crypto';
 import { CONFIG } from '../config.js';
+import { expurger } from './secrets.js';
 
 class HttpError extends Error {
-  constructor(message, status, url) {
+  constructor(message, status, url, retryAfter = null) {
     super(message);
     this.name = 'HttpError';
     this.status = status;
     this.url = url;
+    /** Valeur de l'en-tête `Retry-After`, en secondes, si la source en donne une. */
+    this.retryAfter = retryAfter;
   }
+}
+
+/**
+ * Faut-il réessayer après cette erreur ?
+ *
+ * Le raisonnement tient en une phrase : on ne réessaie que ce qu'un réessai
+ * peut réparer. Insister sur un jeton refusé ne le rendra pas valide, et une
+ * source qui répond « trop de requêtes » à une requête de trop n'a pas besoin
+ * qu'on recommence tout de suite.
+ *
+ * - 401 / 403 : jeton absent, faux, expiré, ou souscription manquante. Aucun
+ *   réessai — c'est une erreur de configuration, pas un incident réseau.
+ * - 404 : la ressource n'existe pas. Aucun réessai.
+ * - 429 : quota dépassé. Un seul réessai, et seulement après le délai demandé.
+ * - 5xx, coupures, délais dépassés : incident passager, réessais avec attente
+ *   croissante.
+ */
+function reessayable(err) {
+  if (!(err instanceof HttpError)) return true; // réseau, DNS, délai dépassé
+  if (err.status === 401 || err.status === 403 || err.status === 404) return false;
+  if (err.status === 429) return true;
+  return err.status >= 500;
+}
+
+/** Lit `Retry-After`, qui peut être un nombre de secondes ou une date HTTP. */
+function lireRetryAfter(res) {
+  const brut = res.headers.get('retry-after');
+  if (!brut) return null;
+  const secondes = Number(brut);
+  if (Number.isFinite(secondes)) return Math.max(0, secondes);
+  const date = Date.parse(brut);
+  if (Number.isNaN(date)) return null;
+  return Math.max(0, Math.round((date - Date.now()) / 1000));
 }
 
 /**
@@ -31,9 +67,15 @@ function empreinte(donnees) {
   return crypto.createHash('sha256').update(donnees).digest('hex');
 }
 
-async function une_fois(url, { accept, binary, conditionnel = true } = {}) {
+async function une_fois(url, {
+  accept, binary, conditionnel = true, entetesSupplementaires, delaiMs, limiteur,
+} = {}) {
+  // Le limiteur passe avant tout le reste : il doit compter les requêtes
+  // effectivement émises, y compris celles issues d'un réessai.
+  if (limiteur) await limiteur.reserver();
+
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), CONFIG.requestTimeoutMs);
+  const timer = setTimeout(() => ctrl.abort(), delaiMs || CONFIG.requestTimeoutMs);
   const envoye = Date.now();
 
   try {
@@ -41,6 +83,9 @@ async function une_fois(url, { accept, binary, conditionnel = true } = {}) {
       'User-Agent': CONFIG.userAgent,
       Accept: accept || '*/*',
       'Accept-Language': 'en,fr;q=0.8',
+      // Les en-têtes d'authentification arrivent ici. Ils ne sont jamais
+      // journalisés : rien dans ce module n'écrit le contenu de `entetes`.
+      ...(entetesSupplementaires || {}),
     };
 
     const connu = conditionnel ? validateurs.get(url) : null;
@@ -61,7 +106,13 @@ async function une_fois(url, { accept, binary, conditionnel = true } = {}) {
       };
     }
 
-    if (!res.ok) throw new HttpError(`HTTP ${res.status}`, res.status, url);
+    if (!res.ok) {
+      const retryAfter = lireRetryAfter(res);
+      // Quota dépassé : on fait taire l'application aussi longtemps que la
+      // source le demande, plutôt que de continuer à frapper une porte fermée.
+      if (res.status === 429 && limiteur) limiteur.pauser(retryAfter ?? 60);
+      throw new HttpError(`HTTP ${res.status}`, res.status, url, retryAfter);
+    }
 
     const brut = binary
       ? Buffer.from(await res.arrayBuffer())
@@ -107,14 +158,27 @@ export async function recuperer(url, opts = {}, tentatives = 3) {
       return await une_fois(url, opts);
     } catch (err) {
       derniere = err;
-      // Une 404 ne se réessaie pas : la ressource n'existe pas.
-      if (err instanceof HttpError && err.status === 404) break;
-      if (i < tentatives - 1) await new Promise((r) => setTimeout(r, 800 * (i + 1)));
+      if (!reessayable(err)) break;
+      if (i >= tentatives - 1) break;
+
+      // Attente croissante — 800 ms, 1,6 s, 2,4 s — sauf si la source a dit
+      // elle-même combien de temps attendre, auquel cas c'est elle qui décide.
+      const parDefaut = 800 * (i + 1);
+      const demande = err instanceof HttpError && err.retryAfter != null
+        ? Math.min(err.retryAfter * 1000, 120_000)
+        : 0;
+      await new Promise((r) => setTimeout(r, Math.max(parDefaut, demande)));
     }
   }
+
+  const statut = derniere instanceof HttpError ? derniere.status : null;
   return {
-    __error: derniere?.message || 'échec réseau',
-    __url: url,
+    // `expurger` est un filet : le message vient d'une erreur réseau, donc d'un
+    // texte que nous ne contrôlons pas et qui pourrait recopier une URL.
+    __error: expurger(derniere?.message || 'échec réseau'),
+    __statut: statut,
+    __definitif: derniere ? !reessayable(derniere) : false,
+    __url: expurger(url),
     recuLe: new Date().toISOString(),
   };
 }

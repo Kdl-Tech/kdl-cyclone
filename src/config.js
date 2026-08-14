@@ -12,8 +12,10 @@ export const CONFIG = {
   timezone: 'America/Guadeloupe',
 
   // Cadence de collecte. Le serveur interroge les sources ; jamais le navigateur.
-  // Budget Open-Meteo : 10 000 req/jour. Ici < 400/jour dans le pire cas.
-  collectIntervalMs: 10 * 60 * 1000,      // 10 min
+  // Budget Open-Meteo : 10 000 req/jour. À 5 min, < 800/jour dans le pire cas —
+  // le NHC (domaine public) n'a pas de quota et la détection de « 304 inchangé »
+  // évite tout retraitement inutile.
+  collectIntervalMs: 5 * 60 * 1000,       // 5 min
   environmentIntervalMs: 60 * 60 * 1000,  // 1 h (données de modèle : maille horaire)
 
   // Au-delà, une donnée est signalée « périmée » dans l'interface.

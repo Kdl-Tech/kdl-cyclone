@@ -42,7 +42,9 @@ export async function fetchOutlookZones() {
   // Document inchangé depuis la dernière fois : le collecteur réutilisera les
   // zones déjà connues plutôt que de retélécharger et de reparser pour rien.
   if (estInchange(reponse)) {
-    return { ok: true, inchange: true, zones: null, tracabilite: reponse };
+    // Même inchangé, la réponse 304 porte l'heure d'émission mémorisée
+    // (Last-Modified) : on la propage pour que la fraîcheur reste juste.
+    return { ok: true, inchange: true, zones: null, emisLe: reponse.emisLe, tracabilite: reponse };
   }
 
   let fichiers;
@@ -147,7 +149,7 @@ export async function fetchOutlookZones() {
 export async function fetchOutlookTexte() {
   const reponse = await fetchTexte(URLS.twoAtlantiqueXml);
   if (estErreur(reponse)) return { ok: false, erreur: reponse.__error };
-  if (estInchange(reponse)) return { ok: true, inchange: true, tracabilite: reponse };
+  if (estInchange(reponse)) return { ok: true, inchange: true, emisLe: reponse.emisLe, tracabilite: reponse };
 
   const xml = reponse.corps;
   const pub = xml.match(/<pubDate>([^<]+)<\/pubDate>/)?.[1] || null;
@@ -339,6 +341,51 @@ export async function fetchConeOfficiel(urlZip) {
 }
 
 /**
+ * Trajectoire prévue d'un système nommé : la polyligne officielle du NHC.
+ * Le zip `forecastTrack` porte une couche ligne (`..._lin.shp`) reliant les
+ * positions prévues. Retourne un tableau de points `[lon, lat]` (le format
+ * attendu par la carte), ou `null` si le NHC n'en publie pas.
+ */
+export async function fetchTrajectoireOfficielle(urlZip) {
+  if (!urlZip) return null;
+  const reponse = await fetchBinaire(urlZip, { conditionnel: false });
+  if (estErreur(reponse)) return null;
+
+  let fichiers;
+  try {
+    fichiers = unzip(reponse.corps);
+  } catch {
+    return null;
+  }
+
+  // La ligne prévue est la couche `_lin` ; à défaut, le premier shapefile.
+  const nomShp = [...fichiers.keys()].find((n) => /lin\.shp$/i.test(n))
+    || [...fichiers.keys()].find((n) => /\.shp$/i.test(n));
+  if (!nomShp) return null;
+
+  const couche = readLayer(fichiers.get(nomShp), fichiers.get(nomShp.replace(/\.shp$/i, '.dbf')));
+  return trajectoireDepuisCouche(couche);
+}
+
+/**
+ * Convertit une couche shapefile de type ligne en polyligne `[lon, lat]`.
+ * Fonction pure, isolée pour être testable sans réseau ni binaire.
+ */
+export function trajectoireDepuisCouche(couche) {
+  const points = [];
+  (couche || [])
+    .filter((f) => f?.geometry?.type === 'PolyLine' && f.geometry.rings?.length)
+    .forEach((f) => f.geometry.rings.forEach((partie) => partie.forEach((p) => {
+      points.push([
+        Math.round(p.lon * 1000) / 1000,
+        Math.round(p.lat * 1000) / 1000,
+      ]);
+    })));
+
+  return points.length >= 2 ? points : null;
+}
+
+/**
  * Collecte complète NHC.
  * Aucune exception ne remonte : le rapport dit ce qui a échoué et ce qui n'a
  * pas changé depuis la dernière fois.
@@ -352,11 +399,16 @@ export async function collecterNhc() {
 
   const systemes = actifs.ok && !actifs.inchange ? actifs.systemes : null;
 
-  // Le cône n'est demandé que pour les systèmes qui en publient un.
+  // Cône et trajectoire ne sont demandés que pour les systèmes qui en publient.
   if (systemes) {
     await Promise.all(
       systemes.map(async (s) => {
-        if (s.liens.cone) s.coneOfficiel = await fetchConeOfficiel(s.liens.cone);
+        const [cone, trajectoire] = await Promise.all([
+          s.liens.cone ? fetchConeOfficiel(s.liens.cone) : null,
+          s.liens.trajectoire ? fetchTrajectoireOfficielle(s.liens.trajectoire) : null,
+        ]);
+        if (cone) s.coneOfficiel = cone;
+        if (trajectoire) s.trajectoireOfficielle = trajectoire;
       }),
     );
   }

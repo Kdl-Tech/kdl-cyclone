@@ -7,23 +7,7 @@ Vérification effectuée le **9 août 2026**.
 
 ---
 
-## 0. Communes et lieux — deux sources, utilisées hors ligne uniquement
-
-### 0.1 Découpage administratif officiel (territoires français)
-
-| | |
-|---|---|
-| Service | https://geo.api.gouv.fr/communes |
-| Données | Découpage administratif de l'État français |
-| Clé d'accès | Aucune |
-| Coût | 0 € |
-| Usage | **À la fabrication seulement** : `scripts/build-communes.mjs` |
-
-Les **32 communes de Guadeloupe** et les **34 de Martinique** viennent de là,
-avec leur centre géographique et leur population légale. Liste exhaustive et
-exacte, ni une commune de plus, ni une de moins.
-
-### 0.2 Géocodage Open-Meteo (îles indépendantes)
+## 0. Géocodage Open-Meteo — utilisé hors ligne uniquement
 
 | | |
 |---|---|
@@ -33,31 +17,13 @@ exacte, ni une commune de plus, ni une de moins.
 | Coût | 0 € |
 | Usage | **À la fabrication seulement** : `scripts/build-communes.mjs` |
 
-Pour la Dominique, Sainte-Lucie, la Barbade, Antigua-et-Barbuda, Trinité-et-Tobago
-et les quartiers des collectivités du Nord, que l'API française ne découpe pas.
+Les 88 communes et zones proposées dans l'onglet météo ont leurs coordonnées
+issues de ce service, figées dans `src/communes.js`. **L'application ne
+l'interroge jamais à l'exécution** : la liste est statique, et aucun nom saisi
+par un visiteur n'est envoyé où que ce soit.
 
-### Pourquoi deux sources
-
-GeoNames enregistre certains chefs-lieux sous le nom d'un de leurs quartiers :
-une recherche de « Bouillante » y renvoie « Village », « Schoelcher » renvoie
-« Case Navire ». La première version du script retenait le résultat le plus
-peuplé sans vérifier le nom — l'application a donc proposé pendant un temps une
-commune « Village » qui n'existe pas, tandis que Bouillante et Schœlcher
-manquaient.
-
-D'où la règle appliquée depuis : **un résultat dont le nom ne correspond pas à
-ce qui était demandé est rejeté**, et l'absence est signalée en fin d'exécution
-plutôt que comblée par un à-peu-près. Pour une application météo, une commune
-inventée est pire qu'une commune manquante.
-
-Trois lieux sont écartés en connaissance de cause, faute de figurer dans les
-sources : Quartier d'Orléans (Saint-Martin), Saint-Jean et Lorient
-(Saint-Barthélemy) — ce sont des quartiers, pas des communes.
-
-**L'application n'interroge aucun de ces services à l'exécution** : la liste est
-statique dans `src/communes.js`, et aucun nom saisi par un visiteur n'est envoyé
-où que ce soit. Écrire des latitudes à la main aurait fini par produire un
-bulletin correspondant à un point situé en mer, ou dans l'île voisine.
+Ce choix est délibéré : écrire des latitudes à la main aurait fini par produire
+un bulletin correspondant à un point situé en mer, ou dans l'île voisine.
 
 Relancer `node scripts/build-communes.mjs` uniquement si la liste des
 territoires change.
@@ -139,23 +105,125 @@ nécessaires au calcul de la rotation sont obtenus en **un seul appel**.
 
 ---
 
-## 3. Météo-France — non intégré, volontairement
+## 3. Météo-France — observations intégrées, vigilance en attente
+
+Vérifié le **14 août 2026** contre l'API réelle, avec un jeton du portail.
 
 | | |
 |---|---|
-| Vigilance Guadeloupe | https://vigilance.meteofrance.fr/fr/guadeloupe |
-| API vigilance | `public-api.meteofrance.fr` — **jeton d'accès requis** |
+| Portail | https://portail-api.meteofrance.fr/web/fr/ |
+| Authentification | en-tête `apikey`, jeton dans `METEOFRANCE_API_TOKEN` |
+| Licence | **Licence Ouverte 2.0 (Etalab)** — attribution « Source : Météo-France » |
+| Coût | 0 € |
 
-Les points d'accès testés (`webservice.meteofrance.com`,
-`rpcache-aa.meteofrance.com`) répondent `401 — you must provide a token`.
+### 3.1 Observations — **intégrées**
 
-**Décision** : ne pas intégrer. Afficher une vigilance officielle avec un
-décalage, une erreur d'interprétation ou une panne silencieuse serait pire que
-de ne pas l'afficher du tout. KDL Cyclone renvoie donc directement vers la page
-officielle, mise en avant sur l'accueil et sur la page Guadeloupe.
+| | |
+|---|---|
+| API | `DonneesPubliquesPaquetObservation` — `/public/DPPaquetObs/v1` |
+| Point d'accès | `/paquet/horaire?id-departement=<971\|972>&format=csv` |
+| Quota | 50 requêtes/minute |
+| Cadence | horaire — l'application appelle une fois par heure et par département |
 
-Si un jeton gratuit est obtenu plus tard, l'intégration se fera par variable
-d'environnement, sans jamais remplacer le lien officiel.
+Le format **CSV est retenu** : 709 Ko contre 2 192 Ko en JSON pour des données
+identiques. Le paquet contient cinq jours d'historique ; seule la mesure la
+plus récente de chaque station est conservée.
+
+Couverture réelle mesurée en Guadeloupe (46 stations) :
+
+| Grandeur | Stations qui la mesurent |
+|---|---|
+| Pluie sur une heure | 46 / 46 |
+| Température | 42 / 46 |
+| Humidité | 17 / 46 |
+| Vent moyen et direction | 16 / 46 |
+| Pression | 6 / 46 |
+| **Rafales** | **0 / 46 — jamais mesurées par ce réseau** |
+
+L'absence de rafale est affichée comme une absence, jamais comme un zéro : sur
+une application de veille cyclonique, « rafale 0 km/h » serait un contresens
+dangereux.
+
+**Saint-Martin et Saint-Barthélemy ne sont pas couverts** : leurs codes ne
+figurent pas dans la liste des départements acceptés par l'API.
+
+### 3.2 Vigilance — **intégrée**
+
+| | |
+|---|---|
+| API | `DonneesPubliquesVigilance` — `/public/DPVigilance/v1` |
+| Point d'accès | `/vigilanceom/flux/dernier` — archive ZIP, ~1,4 Mo |
+| Quota | 60 requêtes/minute |
+| Cadence | l'archive est réactualisée en continu ; l'application la relit toutes les 5 minutes |
+
+Fait vérifié, contraire à une partie de la documentation publique : **il
+n'existe aucun point d'accès JSON par département pour les Antilles**. Seules
+la Polynésie et la Nouvelle-Calédonie ont le leur. Les départements d'outre-mer
+passent par cette archive unique, lue avec le lecteur ZIP maison.
+
+Contenu réel de l'archive (16 entrées) : des bulletins PDF, des textes, et des
+fichiers **`CDPV85_*.txt` qui contiennent en réalité du JSON**. L'extension ne
+dit rien du contenu — l'analyseur teste donc le premier caractère utile plutôt
+que le nom du fichier.
+
+Correspondance des territoires, relevée sur le flux :
+
+| Territoire | Fichier | Domaine retenu |
+|---|---|---|
+| Guadeloupe (et dépendances) | `CDPV85_TFFR_.txt` | `VIGI971-01` |
+| Martinique | `CDPV85_TFFF_.txt` | `VIGI972-01` |
+| Saint-Martin et Saint-Barthélemy | `CDPV85_TFFJ_.txt` | `VIGI978-977-01` |
+
+Chaque territoire est découpé en domaines (`VIGI971-01`, puis `-51` à `-57`).
+**Seule la zone principale est retenue** : additionner les vigilances des
+sous-zones reviendrait à annoncer une alerte que Météo-France n'a pas émise.
+
+Identifiants de phénomènes, **confirmés par recoupement dans le flux lui-même**
+— le bulletin rédigé de Mayotte annonçait « Vagues-submersion JAUNE, Vents
+forts néant, Fortes pluies/Orages néant » quand sa carte portait `9:2, 1:1,
+12:1` :
+
+| Identifiant | Phénomène |
+|---|---|
+| 1 | Vent violent |
+| 2 et 12 | Fortes pluies-Orages |
+| 9 | Vagues-submersion |
+| 10 | **non confirmé** — affiché « Phénomène n° 10 » |
+
+L'identifiant 10 apparaît en Guadeloupe, en Martinique et à Mayotte mais pas à
+Saint-Pierre-et-Miquelon. Il désigne vraisemblablement le risque cyclonique,
+mais aucun bulletin du flux ne l'a encore nommé : sur une vigilance officielle,
+un nom probable n'est pas un nom vérifié, et il reste donc au repli.
+
+Les couleurs `0` et `-1` signifient « non évalué » et ne sont jamais affichées
+comme un niveau vert.
+
+### 3.3 Radar — **souscrit mais non exploitable en l'état**
+
+| | |
+|---|---|
+| API | `DonneesPubliquesRadar` — `/public/DPRadar/v1` |
+| Zone | **ANTILLES** existe bien, produits `REFLECTIVITE` et `LAME_D_EAU`, toutes les 5 minutes |
+| Maille | 1000 m (seule valeur acceptée pour cette zone) |
+| Poids | 26 Ko compressés → **4,5 Mo** décompressés |
+| Format | **BUFR édition 4**, centre 85 (Toulouse) |
+
+Le blocage n'est pas le poids, c'est le format. Le message emploie 56
+descripteurs dont plusieurs **séquences et éléments locaux au centre 85**
+(`3-29-192`, `0-48-192`, `0-25-192`, `0-31-192`, `0-06-196`), absents des
+tables publiques de l'OMM, ainsi que des opérateurs de redéfinition
+(`2-01-124`, `2-02-129`, `2-03-011`) et des réplications différées.
+
+Sans les tables locales de Météo-France, l'échelle, la référence et la largeur
+en bits de ces champs ne peuvent pas être devinées : un décodeur écrit à la
+main rendrait des valeurs **fausses sans lever d'erreur**. C'est un décodeur
+BUFR quasi complet qu'il faudrait, pas un lecteur ciblé.
+
+**Décision** : ne pas intégrer le radar tant que le décodage n'est pas sûr. La
+voie réaliste serait `ecCodes` (paquet système `libeccodes-tools`, qui embarque
+les tables locales du centre 85), sur le modèle du venv Python déjà utilisé
+pour les cartes sociales. Cela suppose une dépendance système, donc une
+décision explicite.
 
 ---
 

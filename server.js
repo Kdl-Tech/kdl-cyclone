@@ -144,10 +144,10 @@ function pageHtml(chemin, etatCourantValeur, canoniqueForcee) {
  * Sans ce cache, chaque visiteur consultant la même commune déclencherait un
  * appel : le quota gratuit d'Open-Meteo dépendrait alors du trafic, ce que
  * l'architecture évite depuis le premier jour. Ici, une commune consultée cent
- * fois en dix minutes coûte une seule requête.
+ * fois en cinq minutes coûte une seule requête.
  */
 const cacheLieux = new Map();
-const DUREE_CACHE_LIEU = 10 * 60 * 1000;
+const DUREE_CACHE_LIEU = 5 * 60 * 1000;
 
 async function bulletinDuLieu(territoire, lieu) {
   const cle = `${territoire}:${lieu.cle}`;

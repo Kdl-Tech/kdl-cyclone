@@ -4,6 +4,53 @@ Les dates sont celles du déploiement en production. La version installée est
 lisible sur [`/version.json`](https://cyclone.kdl-tech.fr/version.json) et dans
 la page À propos de l'application.
 
+## 0.13.0 — 14 août 2026
+
+**La vigilance officielle de Météo-France s'affiche enfin dans l'application.**
+Jusqu'ici, KDL Cyclone renvoyait vers la page officielle sans pouvoir en
+relayer le contenu. Sur un territoire français, c'est elle qui fait autorité,
+et c'est elle qui bouge en premier : le National Hurricane Center publie
+quatre fois par jour, Météo-France dès qu'une vigilance change.
+
+La vigilance apparaît en tête de la page du territoire, avant l'estimation
+KDL, avec son niveau écrit en toutes lettres, les phénomènes concernés,
+l'heure d'émission du bulletin et le lien vers l'autorité. Elle est relayée
+telle quelle, jamais reformulée. Les sept territoires français sont couverts,
+Saint-Martin et Saint-Barthélemy compris ; les six territoires étrangers n'en
+reçoivent aucune, puisque Météo-France ne les couvre pas.
+
+- **Mesures réelles des stations** : la page du territoire distingue désormais
+  ce qui est *mesuré* de ce qui est *calculé*. Pression, vent, pluie,
+  température et humidité relevés par les stations de Guadeloupe et de
+  Martinique s'affichent sous un tampon « Mesuré », au-dessus des sorties de
+  modèle. S'y ajoutent les extrêmes du territoire — pression la plus basse,
+  vent le plus fort, pluie la plus forte — car en veille, c'est le point le
+  plus exposé qui compte, pas la moyenne.
+- **Une absence de mesure reste une absence.** Le réseau antillais ne mesure
+  pas les rafales : l'application l'écrit, au lieu d'afficher « 0 km/h ». Sur
+  une application de veille cyclonique, une mesure absente présentée comme
+  nulle est un contresens dangereux.
+- **Provenance des données rappelée partout** : une ligne en pied de page
+  nomme les cinq sources et donne l'état de chacune à la dernière collecte, et
+  chaque bloc de données porte la sienne. GOES-19 et Natural Earth étaient
+  utilisés sans figurer nulle part — une provenance incomplète est une
+  provenance fausse.
+- **Le radar n'est pas intégré**, et c'est un choix. Le produit Antilles existe
+  bien, actualisé toutes les cinq minutes, mais il est diffusé en BUFR avec des
+  tables propres au centre de Toulouse. Un décodeur écrit sans ces tables
+  rendrait des valeurs fausses sans lever la moindre erreur. Le détail est dans
+  `docs/SOURCES.md`.
+- Correctifs de la 0.12.1, jamais publiés ici : trajectoire officielle des
+  systèmes nommés effectivement chargée, fraîcheur du bulletin conservée après
+  un redémarrage, cadence de collecte portée à cinq minutes.
+
+Côté technique, le jeton d'accès reste strictement côté serveur : lu depuis un
+fichier ignoré par Git, jamais journalisé, jamais transmis au navigateur. Les
+refus d'authentification ne sont jamais réessayés, un dépassement de quota
+respecte le délai demandé par Météo-France, et la dernière valeur connue
+survit à une panne — six heures au plus pour une vigilance, au-delà de quoi
+elle cesse d'être affichée plutôt que d'induire en erreur.
+
 ## 0.12.0 — 10 août 2026
 
 **Les appareils restés sur une ancienne version ne pouvaient plus en sortir.**

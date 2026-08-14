@@ -406,6 +406,7 @@
     rendreInvitationInstallation();
     rendreGuadeloupe();
     rendreSources();
+    rendreProvenance();
     if (carte) carte.definirEtat(etat);
     if (vueCourante === 'systeme' && systemeOuvert) rendreFiche(systemeOuvert);
     $('#pied-version').textContent = 'Dernière collecte : ' + heureLocale(etat.genereLe, true)
@@ -1042,6 +1043,37 @@
         + 'Changez de territoire avec le sélecteur en haut de l\'écran.</div></div>';
     }
 
+    // Vigilance officielle en tête : sur un territoire français, c'est elle qui
+    // fait autorité, et elle passe donc avant l'estimation KDL. Relayée telle
+    // quelle, jamais reformulée.
+    var vig = terr.vigilanceOfficielle;
+    if (vig && vig.niveau) {
+      var actifs = vig.phenomenesActifs || [];
+      html += '<div class="carte-bloc vigilance vigilance--' + echapper(vig.niveau) + '"'
+        + ' style="margin-bottom:var(--e4)">'
+        + '<h3 class="section-titre section-titre--officiel">'
+        + '<span class="etiquette etiquette--officiel">Officiel</span> '
+        + 'Vigilance Météo-France — ' + echapper(vig.zone) + '</h3>'
+        + '<div class="vigilance__niveau">' + echapper(vig.niveauLibelle) + '</div>'
+        + (actifs.length
+          ? '<p class="vigilance__phenomenes">Phénomène(s) concerné(s) : <strong>'
+            + actifs.map(echapper).join('</strong>, <strong>') + '</strong></p>'
+          : '<p class="vigilance__phenomenes">Aucun phénomène en vigilance à cette heure.</p>')
+        + '<p style="color:var(--texte-faible);font-size:.82rem;margin-top:var(--e3)">'
+        + '<strong>Source : Météo-France</strong> — bulletin émis à '
+        + heureLocale(vig.emisLe, true) + ' (heure de Guadeloupe), ' + heureUtc(vig.emisLe) + '. '
+        + (vig.perime ? 'Dernière vigilance connue : la source n\'a pas répondu au dernier appel. ' : '')
+        + 'Licence Ouverte 2.0 (Etalab). En cas d\'alerte, suivez exclusivement '
+        + 'les consignes officielles.</p>'
+        + '<a class="lien-officiel" href="' + echapper(vig.lien || 'https://vigilance.meteofrance.fr/fr')
+        + '" target="_blank" rel="noopener noreferrer">'
+        + '<div class="lien-officiel__texte"><div class="lien-officiel__nom">'
+        + 'Consulter la vigilance officielle</div>'
+        + '<div class="lien-officiel__note">Page Météo-France — ouvre un nouvel onglet</div></div>'
+        + ICONES.externe + '</a>'
+        + '</div>';
+    }
+
     html += '<div class="carte-bloc bloc-risque bloc-risque--n' + cranRisque(terr.risque && terr.risque.niveau)
       + '" style="margin-bottom:var(--e4)">'
       + '<h3 class="section-titre section-titre--risque">Risque cyclonique local</h3>'
@@ -1069,6 +1101,55 @@
       + echapper(terr.avertissement || '') + '</div></div>'
       + '</div>';
 
+    // Mesures réelles des stations Météo-France, présentées AVANT les sorties
+    // de modèle : ce qui a été constaté prime sur ce qui a été calculé. Le
+    // tampon plein marque l'officiel, conformément à la direction artistique.
+    var obs = terr.observations;
+    if (obs && obs.disponible) {
+      var noteStation = function (m) {
+        return m ? 'station à ' + nombre(m.distanceKm) + ' km' : '';
+      };
+      var val = function (m, unite, decimales) {
+        return valeurOuIndispo(m ? m.valeur : null, unite, decimales);
+      };
+
+      html += '<div class="carte-bloc" style="margin-bottom:var(--e4)">'
+        + '<h3 class="section-titre section-titre--officiel">'
+        + '<span class="etiquette etiquette--officiel">Mesuré</span> Relevés des stations</h3>'
+        + '<div class="stats">'
+        + stat('Vent moyen', val(obs.ventMoyenKmh, 'km/h'), noteStation(obs.ventMoyenKmh), 'vent')
+        + stat('Rafales', val(obs.rafaleKmh, 'km/h'),
+          obs.rafaleKmh ? noteStation(obs.rafaleKmh) : 'non mesurée par ce réseau', 'vent')
+        + stat('Pluie sur une heure', val(obs.pluie1hMm, 'mm', 1), noteStation(obs.pluie1hMm), 'pluie')
+        + stat('Pression', val(obs.pressionHpa, 'hPa'), noteStation(obs.pressionHpa), 'pression')
+        + stat('Température', val(obs.temperatureC, '°C', 1), noteStation(obs.temperatureC), 'mer')
+        + stat('Humidité', val(obs.humiditePct, '%'), noteStation(obs.humiditePct), 'pluie')
+        + '</div>'
+        // Les extrêmes du territoire : en veille, c'est le point le plus
+        // exposé qui compte, pas la moyenne.
+        + (obs.pressionMiniHpa || obs.ventMaxKmh || obs.pluieMaxMm
+          ? '<h3 class="section-titre section-titre--officiel" style="margin-top:var(--e5)">'
+            + 'Extrêmes relevés sur le territoire</h3>'
+            + '<div class="stats">'
+            + stat('Pression la plus basse', val(obs.pressionMiniHpa, 'hPa'),
+              noteStation(obs.pressionMiniHpa), 'pression')
+            + stat('Vent le plus fort', val(obs.ventMaxKmh, 'km/h'),
+              noteStation(obs.ventMaxKmh), 'vent')
+            + stat('Pluie la plus forte', val(obs.pluieMaxMm, 'mm', 1),
+              noteStation(obs.pluieMaxMm), 'pluie')
+            + '</div>'
+          : '')
+        + '<p style="color:var(--texte-faible);font-size:.82rem;margin-top:var(--e4)">'
+        + '<strong>Source : Météo-France</strong> — mesuré à '
+        + heureLocale(obs.mesureLe) + ' (heure de Guadeloupe), '
+        + heureUtc(obs.mesureLe) + '. '
+        + nombre(obs.stationsRetenues) + ' station(s) retenue(s) autour du territoire. '
+        + 'Licence Ouverte 2.0 (Etalab). '
+        + (obs.perime ? 'Dernière valeur connue : la source n\'a pas répondu au dernier appel. ' : '')
+        + 'Ce sont des mesures constatées, pas des prévisions.</p>'
+        + '</div>';
+    }
+
     html += '<div class="carte-bloc" style="margin-bottom:var(--e4)">'
       + '<h3 class="section-titre"><span class="etiquette etiquette--modele">Modèle</span> Conditions actuelles</h3>'
       + '<div class="stats">'
@@ -1079,7 +1160,11 @@
       + stat('Houle', valeurOuIndispo(mer && mer.houleM, 'm', 1), 'hauteur significative', 'houle')
       + stat('Période de houle', valeurOuIndispo(mer && mer.periodeS, 's', 1), 'une longue période porte loin', 'houle')
       + stat('Température de la mer', valeurOuIndispo(mer && mer.sstC, '°C', 1), 'carburant d\'un système tropical', 'mer')
-      + '</div></div>';
+      + '</div>'
+      + '<p style="color:var(--texte-faible);font-size:.82rem;margin-top:var(--e4)">'
+      + '<strong>Source : Open-Meteo</strong> (modèles GFS, ECMWF et ICON), licence CC BY 4.0. '
+      + 'Ce sont des valeurs calculées par des modèles, pas des mesures.</p>'
+      + '</div>';
 
     var jours = (terr.conditions && terr.conditions.jours) || [];
     if (jours.length) {
@@ -1181,6 +1266,50 @@
       + 'Cette liste fonctionne sans connexion. Un service gratuit KDLTech, conçu en Guadeloupe.</p>';
 
     $('#page-preparation').innerHTML = html;
+  }
+
+  // ------------------------------------------------------------ provenance
+
+  /**
+   * Rappel permanent de la provenance des données, en pied de page.
+   *
+   * Une application de veille doit pouvoir répondre en un coup d'œil à
+   * « d'où sort ce chiffre ». La page Sources donne le détail ; cette ligne
+   * donne l'essentiel partout, y compris sur la carte et en pleine alerte,
+   * avec l'état réel de chaque source au moment de la dernière collecte.
+   */
+  function rendreProvenance() {
+    var zone = $('#pied-provenance');
+    if (!zone) return;
+
+    var sources = etat.sources || [];
+    if (!sources.length) { zone.innerHTML = ''; return; }
+
+    zone.innerHTML = '<span style="color:var(--texte-faible)">Données fournies par&nbsp;:</span> '
+      + sources.map(function (s) {
+        var dispo = s.etat && s.etat.disponible;
+        var mode = (s.etat && s.etat.mode) || '';
+        // Le titre au survol porte le détail ; la ligne reste courte.
+        var infobulle = echapper(s.nom + ' — ' + s.role + ' (' + s.licence + ')'
+          + (mode ? ' · ' + mode : ''));
+        return '<span class="provenance__source" title="' + infobulle + '">'
+          + '<span class="provenance__pastille provenance__pastille--'
+          + (dispo ? 'ok' : 'ko') + '" aria-hidden="true"></span>'
+          + echapper(nomCourtSource(s))
+          + '</span>';
+      }).join('<span style="color:var(--texte-faible)"> · </span>')
+      + ' <button class="lien-texte" type="button" data-vers="sources">Tout le détail</button>';
+  }
+
+  /** Nom court, lisible d'un coup d'œil, sans perdre l'identité de la source. */
+  function nomCourtSource(s) {
+    var courts = {
+      nhc: 'NHC (NOAA)',
+      openmeteo: 'Open-Meteo',
+      meteofrance: 'Météo-France',
+      satellite: 'GOES-19 (NOAA)',
+    };
+    return courts[s.cle] || s.nom;
   }
 
   // ---------------------------------------------------------------- sources

@@ -1365,6 +1365,54 @@ button { font: inherit; color: inherit; }
 }
 .pied a { color: var(--ocean-vif); }
 
+/* Vigilance officielle Météo-France.
+   Les quatre couleurs sont normées : elles reprennent l'échelle officielle et
+   non la palette de menace KDL, car il s'agit de relayer une information
+   réglementaire, pas de l'interpréter. Le niveau est écrit en toutes lettres :
+   la couleur ne porte jamais l'information seule. */
+.vigilance { border-left: 4px solid var(--d, var(--bordure)); }
+.vigilance--vert   { --d: var(--n0); }
+.vigilance--jaune  { --d: var(--n1); }
+.vigilance--orange { --d: var(--n2); }
+.vigilance--rouge  { --d: var(--n3); }
+
+.vigilance__niveau {
+  font-size: 1.9rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--d);
+  margin-top: var(--e2);
+}
+
+.vigilance__phenomenes {
+  color: var(--texte-doux);
+  margin-top: var(--e2);
+  max-width: 60ch;
+}
+
+/* Provenance des données, rappelée en pied sur toutes les vues.
+   Chaque source porte une pastille d'état : verte si elle a répondu à la
+   dernière collecte, rouge sinon. La couleur ne porte jamais l'information
+   seule — le nom de la source est écrit, et le survol donne le détail. */
+.provenance__source {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  white-space: nowrap;
+  color: var(--texte-doux);
+}
+
+.provenance__pastille {
+  width: 0.5em;
+  height: 0.5em;
+  border-radius: 50%;
+  flex: none;
+  background: var(--texte-faible);
+}
+
+.provenance__pastille--ok { background: var(--vert); }
+.provenance__pastille--ko { background: var(--n3); }
+
 /* Message éphémère de confirmation — jamais bloquant, jamais commercial. */
 .signal {
   position: fixed;
