@@ -1483,6 +1483,19 @@ button { font: inherit; color: inherit; }
   max-width: 60ch;
 }
 
+/* Niveau cyclonique, dit explicitement : c'est la question que le visiteur
+   vient poser, et elle mérite sa propre ligne, même quand la réponse est
+   rassurante. La couleur reprend l'échelle officielle. */
+.vigilance__cyclone {
+  margin-top: var(--e3);
+  padding: var(--e2) var(--e3);
+  border-radius: var(--r2, 10px);
+  border: 1px solid color-mix(in srgb, var(--d, var(--bordure)) 45%, transparent);
+  background: color-mix(in srgb, var(--d, var(--bordure)) 12%, transparent);
+  color: var(--texte);
+  max-width: 60ch;
+}
+
 /* Provenance des données, rappelée en pied sur toutes les vues.
    Chaque source porte une pastille d'état : verte si elle a répondu à la
    dernière collecte, rouge sinon. La couleur ne porte jamais l'information

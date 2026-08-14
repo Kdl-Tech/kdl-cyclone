@@ -1059,6 +1059,20 @@
           ? '<p class="vigilance__phenomenes">Phénomène(s) concerné(s) : <strong>'
             + actifs.map(echapper).join('</strong>, <strong>') + '</strong></p>'
           : '<p class="vigilance__phenomenes">Aucun phénomène en vigilance à cette heure.</p>')
+        // Le phénomène « Cyclone » est la raison d'être de l'application : son
+        // niveau est dit explicitement, même au vert. C'est précisément la
+        // question que se pose le visiteur, et une réponse rassurante donnée
+        // par l'autorité vaut mieux qu'un silence qu'il faut interpréter.
+        + (function () {
+          var cyc = (vig.phenomenes || []).filter(function (p) { return p.nom === 'Cyclone'; })[0];
+          if (!cyc) return '';
+          return '<p class="vigilance__cyclone vigilance--' + echapper(cyc.niveau) + '">'
+            + 'Vigilance cyclone : <strong>' + echapper(cyc.niveauLibelle) + '</strong>'
+            + (cyc.niveau === 'vert'
+              ? ' — Météo-France ne signale aucun danger cyclonique pour ce territoire.'
+              : '')
+            + '</p>';
+        }())
         + '<p style="color:var(--texte-faible);font-size:.82rem;margin-top:var(--e3)">'
         + '<strong>Source : Météo-France</strong> — bulletin émis à '
         + heureLocale(vig.emisLe, true) + ' (heure de Guadeloupe), ' + heureUtc(vig.emisLe) + '. '

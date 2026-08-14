@@ -188,12 +188,32 @@ forts néant, Fortes pluies/Orages néant » quand sa carte portait `9:2, 1:1,
 | 1 | Vent violent |
 | 2 et 12 | Fortes pluies-Orages |
 | 9 | Vagues-submersion |
-| 10 | **non confirmé** — affiché « Phénomène n° 10 » |
+| 10 | **Cyclone** |
 
-L'identifiant 10 apparaît en Guadeloupe, en Martinique et à Mayotte mais pas à
-Saint-Pierre-et-Miquelon. Il désigne vraisemblablement le risque cyclonique,
-mais aucun bulletin du flux ne l'a encore nommé : sur une vigilance officielle,
-un nom probable n'est pas un nom vérifié, et il reste donc au repli.
+L'identifiant 10 a été établi par un test falsifiable plutôt que par
+ressemblance. Météo-France documente quatre phénomènes pour la vigilance
+outre-mer — vents violents, fortes pluies-orages, vagues-submersion et cyclone
+— en précisant **« sauf en Guyane »**. Si 10 était le cyclone, il devait donc
+manquer au seul fichier guyanais. Relevé sur le flux réel :
+
+| Fichier | Territoire | Phénomènes |
+|---|---|---|
+| `CDPV85_TFFR_` | Guadeloupe | 1, 2, 9, **10** |
+| `CDPV85_TFFF_` | Martinique | 1, 2, 9, **10** |
+| `CDPV85_TFFJ_` | Îles du Nord | 1, 2, 9, **10** |
+| `CDPV84/95_FMEE_` | Réunion et Mayotte | 1, 9, **10**, 12 |
+| `CDPV85_SOCA_` | **Guyane** | 1, 2, 9 — **pas de 10** |
+
+La Guyane est le seul territoire privé de cet identifiant, exactement là où la
+documentation exclut le cyclone. La prédiction se vérifie.
+
+Les DROM de l'océan Indien emploient l'identifiant 12 là où les Antilles
+emploient le 2, pour le même phénomène.
+
+Le niveau de vigilance cyclonique est affiché explicitement sur la page du
+territoire, **même au vert** : c'est la question que le visiteur vient poser, et
+une réponse rassurante donnée par l'autorité vaut mieux qu'un silence qu'il
+faudrait interpréter.
 
 Les couleurs `0` et `-1` signifient « non évalué » et ne sont jamais affichées
 comme un niveau vert.

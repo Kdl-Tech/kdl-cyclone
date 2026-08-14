@@ -140,16 +140,23 @@ export const ZONES = {
  * « phénomène n° 14 » qu'un nom inventé sur une alerte officielle.
  */
 /*
- * Les identifiants d'outre-mer ont été confirmés en recoupant, dans le flux
- * lui-même, la carte de Mayotte et son bulletin rédigé : le bulletin annonçait
- * « Vagues-submersion JAUNE, Vents forts néant, Fortes pluies/Orages néant »
- * pendant que la carte portait 9:2, 1:1 et 12:1. La correspondance est donc
- * établie, pas supposée.
+ * Identifiants de phénomènes, tous établis sur les données réelles.
  *
- * L'identifiant 10, présent en Guadeloupe, en Martinique et à Mayotte mais
- * absent de Saint-Pierre-et-Miquelon, n'a pas pu être confirmé de la même
- * façon. Il est donc laissé au repli « Phénomène n° 10 » : sur une vigilance
- * officielle, un nom inventé — fût-il probable — n'a pas sa place.
+ * 1, 9 et 12 ont été confirmés en recoupant, dans le flux lui-même, la carte de
+ * Mayotte et son bulletin rédigé : celui-ci annonçait « Vagues-submersion
+ * JAUNE, Vents forts néant, Fortes pluies/Orages néant » pendant que la carte
+ * portait 9:2, 1:1 et 12:1.
+ *
+ * 10 a été établi par un test falsifiable. Météo-France documente quatre
+ * phénomènes pour la vigilance outre-mer — vents violents, fortes
+ * pluies-orages, vagues-submersion et cyclone — en précisant « sauf en
+ * Guyane ». Si 10 était le cyclone, il devait donc manquer au seul fichier
+ * guyanais. Relevé sur le flux : Guadeloupe, Martinique et Îles du Nord
+ * portent 1, 2, 9, 10 ; la Réunion et Mayotte portent 1, 9, 10, 12 ; la Guyane
+ * porte 1, 2, 9 — et elle seule est privée du 10. La prédiction se vérifie.
+ *
+ * Les DROM de l'océan Indien emploient 12 là où les Antilles emploient 2 pour
+ * la même chose : les deux figurent donc ici.
  */
 const PHENOMENES = {
   1: 'Vent violent',
@@ -161,6 +168,7 @@ const PHENOMENES = {
   7: 'Grand froid',
   8: 'Avalanches',
   9: 'Vagues-submersion',
+  10: 'Cyclone',
   12: 'Fortes pluies-Orages',
 };
 
