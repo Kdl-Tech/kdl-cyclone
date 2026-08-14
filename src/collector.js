@@ -52,7 +52,8 @@ const SOURCES = [
     nom: 'Météo-France',
     url: 'https://vigilance.meteofrance.fr/fr/guadeloupe',
     licence: 'Licence Ouverte 2.0 (Etalab)',
-    role: "Vigilance officielle (seule référence pour l'alerte) et mesures des stations",
+    role: "Vigilance officielle (seule référence pour l'alerte), mesures des stations "
+      + 'et rafales prévues par le modèle ARPEGE',
   },
   // Ces deux sources étaient utilisées sans figurer dans la liste : la boucle
   // satellite et le fond de carte. Une provenance incomplète est une

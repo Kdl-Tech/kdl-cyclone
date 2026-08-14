@@ -24,6 +24,7 @@ import { cheminImage, SECTEURS, CANAUX } from './src/sources/satellite.js';
 import { COMMUNES, communePar } from './src/communes.js';
 import { territoire as territoirePar } from './src/territoires.js';
 import { fetchBulletin } from './src/sources/meteo.js';
+import { couche as coucheModele, description as descriptionModele } from './src/sources/arpege.js';
 
 const PUBLIC = path.join(ROOT, 'public');
 const VERSION = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8')).version;
@@ -111,7 +112,9 @@ function enTetesSecurite(res) {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Referrer-Policy', 'no-referrer');
   res.setHeader('X-Frame-Options', 'DENY');
-  res.setHeader('Permissions-Policy', 'geolocation=(self), camera=(), microphone=(), payment=()');
+  // L'application ne demande jamais la position de l'appareil : le territoire
+  // se choisit à la main. Ne pas réclamer une permission dont on n'use pas.
+  res.setHeader('Permissions-Policy', 'geolocation=(), camera=(), microphone=(), payment=()');
   res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
 }
 
@@ -174,6 +177,9 @@ async function bulletinDuLieu(territoire, lieu) {
 /** Cache mémoire du dernier état, pour ne pas relire le disque à chaque requête. */
 let cacheEtat = { valeur: null, etag: null, lu: 0 };
 
+/** Synthèse des retours, gardée une minute (voir la route /api/retours). */
+let cacheRetours = { valeur: null, lu: 0 };
+
 async function etatCourant() {
   if (cacheEtat.valeur && Date.now() - cacheEtat.lu < 15000) return cacheEtat;
   const valeur = await storeEtat.lire();
@@ -199,14 +205,43 @@ function repondre(req, res, { statut = 200, corps, type, cache = 'no-cache', eta
   const accepteGzip = /\bgzip\b/.test(req.headers['accept-encoding'] || '');
   const compressible = /text|json|javascript|svg|manifest/.test(type);
 
+  // `Vary` est posé dès que la réponse *peut* être compressée, et non seulement
+  // quand elle l'est : sans cela, un cache intermédiaire risque de resservir la
+  // variante compressée à un client qui ne l'accepte pas.
+  if (compressible) res.setHeader('Vary', 'Accept-Encoding');
+
   if (accepteGzip && compressible && buf.length > 1024) {
-    const gz = zlib.gzipSync(buf, { level: 6 });
+    const gz = compresser(buf, etag);
     res.setHeader('Content-Encoding', 'gzip');
-    res.setHeader('Vary', 'Accept-Encoding');
     res.writeHead(statut).end(req.method === 'HEAD' ? undefined : gz);
     return;
   }
   res.writeHead(statut).end(req.method === 'HEAD' ? undefined : buf);
+}
+
+/**
+ * Compression avec mémoire courte.
+ *
+ * L'état complet pèse une soixantaine de kilo-octets et ne change qu'à chaque
+ * collecte, toutes les cinq minutes. Le recompresser à chaque visiteur occupait
+ * la boucle d'événements pour produire exactement le même résultat. La réponse
+ * compressée est donc retenue, indexée par l'ETag : tant que le contenu n'a pas
+ * changé, on ressert le même tampon.
+ */
+const cacheGzip = new Map();
+
+function compresser(buf, etag) {
+  if (!etag) return zlib.gzipSync(buf, { level: 6 });
+
+  const connu = cacheGzip.get(etag);
+  if (connu) return connu;
+
+  const gz = zlib.gzipSync(buf, { level: 6 });
+  // Quelques entrées suffisent : les ETag changent à chaque collecte, et une
+  // mémoire sans borne finirait par retenir tout l'historique de la journée.
+  if (cacheGzip.size > 16) cacheGzip.delete(cacheGzip.keys().next().value);
+  cacheGzip.set(etag, gz);
+  return gz;
 }
 
 const json = (req, res, donnees, statut = 200, cache = 'no-cache', etag) =>
@@ -246,6 +281,40 @@ async function servirFichier(req, res, cheminRelatif) {
     cache: immuable ? 'public, max-age=604800' : 'no-cache',
     etag,
   });
+}
+
+/** Adresses depuis lesquelles un en-tête de transmission est digne de foi. */
+const RELAIS_DE_CONFIANCE = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1']);
+
+/**
+ * Adresse du visiteur, vue à travers le reverse proxy.
+ *
+ * L'application écoute sur 127.0.0.1 derrière nginx : `remoteAddress` vaut donc
+ * toujours 127.0.0.1, quel que soit le visiteur. Utilisée telle quelle pour la
+ * limitation de débit, elle faisait partager **une seule empreinte au monde
+ * entier** : trois retours dans l'heure, toutes personnes confondues, et le
+ * formulaire se fermait pour tout le monde.
+ *
+ * Les en-têtes de transmission ne sont lus que si la connexion vient bien du
+ * relais local. Venant d'ailleurs, ils sont ignorés : n'importe qui pourrait
+ * sinon se forger une adresse et contourner la limite.
+ */
+function adresseClient(req) {
+  const directe = req.socket.remoteAddress || '';
+  if (!RELAIS_DE_CONFIANCE.has(directe)) return directe;
+
+  // Cloudflare donne l'adresse d'origine ; c'est la plus fiable des deux.
+  const cf = req.headers['cf-connecting-ip'];
+  if (typeof cf === 'string' && cf.trim()) return cf.trim();
+
+  // Sinon, le premier élément de la chaîne X-Forwarded-For est le client.
+  const xff = req.headers['x-forwarded-for'];
+  if (typeof xff === 'string' && xff.trim()) {
+    const premier = xff.split(',')[0].trim();
+    if (premier) return premier;
+  }
+
+  return directe;
 }
 
 const serveur = http.createServer(async (req, res) => {
@@ -349,8 +418,15 @@ const serveur = http.createServer(async (req, res) => {
       return json(req, res, b, 200, 'no-cache');
     }
 
+    // Synthèse des retours : elle relit et analyse tout le fichier, qui peut
+    // contenir des milliers d'entrées. Sans mémoire courte, marteler cette
+    // route publique suffisait à occuper le disque et la boucle d'événements.
+    // Une minute de retard sur un compteur de suivi n'a aucune importance.
     if (chemin === '/api/retours') {
-      return json(req, res, await syntheseRetours(), 200, 'no-store');
+      if (!cacheRetours.valeur || Date.now() - cacheRetours.lu > 60_000) {
+        cacheRetours = { valeur: await syntheseRetours(), lu: Date.now() };
+      }
+      return json(req, res, cacheRetours.valeur, 200, 'public, max-age=60');
     }
 
     // ---- Cartes sociales générées : immuables, leur nom porte l'empreinte.
@@ -418,6 +494,40 @@ const serveur = http.createServer(async (req, res) => {
       } catch {
         return json(req, res, { erreur: 'Image expirée du cache' }, 404);
       }
+    }
+
+    // ---- Couches de modèle ARPEGE, relayées en image.
+    // Le jeton reste ici : le navigateur ne voit qu'une image de notre origine.
+    if (chemin === '/api/modele') {
+      return json(req, res, descriptionModele(), 200, 'public, max-age=3600');
+    }
+
+    if (chemin.startsWith('/modele/')) {
+      const nom = path.basename(chemin, '.png');
+      if (!/^[a-z]{3,20}$/.test(nom)) return json(req, res, { erreur: 'Couche refusée' }, 400);
+
+      const heures = Number(url.searchParams.get('h') || 0);
+      const r = await coucheModele(nom, heures);
+      if (!r.ok) {
+        // Distinguer ce que le client a mal demandé de ce que le service ne
+        // peut pas fournir : confondre les deux rend les journaux illisibles
+        // et ferait passer une faute de frappe pour une panne.
+        const demandeInvalide = r.motif === 'couche inconnue' || r.motif === 'échéance non proposée';
+        return json(
+          req, res,
+          { erreur: r.motif, echeance: r.echeance || null },
+          demandeInvalide ? 404 : 503,
+          'no-store',
+        );
+      }
+      return repondre(req, res, {
+        corps: r.image,
+        type: TYPES_MIME['.png'],
+        // L'échéance fait partie de l'URL par le paramètre `h`, et l'image ne
+        // change qu'à chaque publication du modèle : une heure de cache.
+        cache: 'public, max-age=3600',
+        etag: `"${crypto.createHash('sha1').update(r.image).digest('hex').slice(0, 16)}"`,
+      });
     }
 
     if (chemin === '/api/satellite') {
@@ -545,7 +655,7 @@ async function traiterRetour(req, res, url) {
     return json(req, res, { erreur: 'Retour trop volumineux.' }, 413);
   }
 
-  const debit = verifierDebit(req.socket.remoteAddress);
+  const debit = verifierDebit(adresseClient(req));
   if (!debit.ok) return json(req, res, { erreur: debit.raison }, 429);
 
   let corps = '';
@@ -580,6 +690,8 @@ async function traiterRetour(req, res, url) {
   }
 
   const id = await enregistrer(resultat.retour, debit.cle);
+  // La synthèse vient de changer : sa mémoire courte n'a plus lieu d'être.
+  cacheRetours = { valeur: null, lu: 0 };
   // Journal volontairement pauvre : ni message, ni adresse, ni identifiant client.
   console.log(`[kdl-cyclone] retour ${id} (${resultat.retour.categorie})`);
   return json(req, res, {
@@ -633,6 +745,10 @@ function fluxEvenements(req, res) {
     abonnes.delete(client);
     try { res.end(); } catch { /* déjà fermée */ }
   }
+  // Exposé sur le client pour que la diffusion puisse fermer proprement une
+  // connexion morte, minuteur compris, et que l'arrêt du service n'ait pas à
+  // attendre des flux qui ne se terminent jamais d'eux-mêmes.
+  client.fermer = fermer;
 
   req.on('close', fermer);
   req.on('error', fermer);
@@ -646,6 +762,10 @@ function diffuser(type, donnees) {
     try {
       client.res.write(charge);
     } catch {
+      // Retirer le client du registre ne suffisait pas : son battement
+      // continuait de s'exécuter toutes les vingt-cinq secondes sur une
+      // connexion morte. On ferme proprement, minuteur compris.
+      client.fermer?.();
       abonnes.delete(client);
     }
   }
@@ -698,6 +818,10 @@ export function demarrer() {
   const arret = (signal) => {
     console.log(`\n[kdl-cyclone] arrêt (${signal})`);
     clearInterval(minuteur);
+    // Les flux d'événements ne se terminent jamais seuls : sans cette fermeture,
+    // `serveur.close()` les attendait et chaque redémarrage traînait jusqu'au
+    // délai de secours de cinq secondes.
+    for (const client of [...abonnes]) client.fermer?.();
     serveur.close(() => process.exit(0));
     setTimeout(() => process.exit(0), 5000).unref();
   };

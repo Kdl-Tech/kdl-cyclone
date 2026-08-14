@@ -76,10 +76,21 @@ export function distanceToSegmentKm(point, segStart, segEnd) {
   return { distanceKm: Math.sqrt(dx * dx + dy * dy), fraction: t };
 }
 
-/** Distance minimale d'un point à une polyligne (trajectoire). */
+/**
+ * Distance minimale d'un point à une polyligne (trajectoire).
+ *
+ * Retourne toujours la même forme d'objet, ou `null`. La version précédente
+ * rendait un simple nombre quand la trajectoire n'avait qu'un point : les
+ * appelants lisaient alors `r.distanceKm` sur un nombre, obtenaient `undefined`
+ * puis `NaN`, et une comparaison avec `NaN` étant toujours fausse, les îles
+ * concernées disparaissaient **en silence** de la liste. Une omission muette
+ * est le pire défaut possible pour une application de veille.
+ */
 export function distanceToTrackKm(point, track) {
   if (!track || track.length === 0) return null;
-  if (track.length === 1) return distanceKm(point, track[0]);
+  if (track.length === 1) {
+    return { distanceKm: distanceKm(point, track[0]), segmentIndex: 0, fraction: 0 };
+  }
   let best = Infinity;
   let bestIndex = 0;
   let bestFraction = 0;

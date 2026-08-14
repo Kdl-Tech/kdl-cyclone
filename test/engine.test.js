@@ -71,7 +71,16 @@ test('distanceToTrackKm — retient le segment le plus proche', () => {
 
 test('distanceToTrackKm — trajectoire vide ou à un point', () => {
   assert.equal(distanceToTrackKm(GP, []), null);
-  assert.equal(Math.round(distanceToTrackKm(GP, [GP])), 0);
+
+  // Une trajectoire d'un seul point rend le même objet qu'une trajectoire
+  // ordinaire. Ce test verrouillait auparavant un retour de type nombre : les
+  // appelants lisaient `r.distanceKm`, obtenaient NaN, et les îles concernées
+  // disparaissaient sans erreur.
+  const r = distanceToTrackKm(GP, [GP]);
+  assert.equal(typeof r, 'object');
+  assert.equal(Math.round(r.distanceKm), 0);
+  assert.equal(r.segmentIndex, 0);
+  assert.equal(r.fraction, 0);
 });
 
 test('pointInRing — intérieur et extérieur d\'un carré', () => {

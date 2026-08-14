@@ -1150,6 +1150,29 @@
         + '</div>';
     }
 
+    // Rafales prévues par ARPEGE. C'est la seule grandeur que les stations ne
+    // mesurent pas et qui décide pourtant d'une mise à l'abri : elle vient donc
+    // du modèle, et c'est écrit. L'encart s'efface de lui-même si la source ne
+    // répond pas — une couche de confort ne doit pas ressembler à une panne.
+    // La visibilité passe par une classe, jamais par un attribut `style` :
+    // la politique de contenu de l'application interdit les styles inline, et
+    // un `style="display:none"` y est purement et simplement ignoré.
+    html += '<div class="carte-bloc bloc-modele est-cache" id="bloc-rafales">'
+      + '<h3 class="section-titre section-titre--vent">'
+      + '<span class="etiquette etiquette--modele">Modèle</span> Rafales prévues sur l\'arc antillais</h3>'
+      + '<div class="echeances" role="group" aria-label="Échéance de la prévision">'
+      + [0, 6, 12, 24].map(function (h) {
+        return '<button class="echeance' + (h === 0 ? ' echeance--active' : '') + '" type="button"'
+          + ' data-echeance="' + h + '">' + (h === 0 ? 'Maintenant' : '+' + h + ' h') + '</button>';
+      }).join('')
+      + '</div>'
+      + '<div class="rafales-carte"><img id="img-rafales" alt="Carte des rafales prévues sur l\'arc antillais"'
+      + ' decoding="async">'
+      + '<svg id="reperes-rafales" class="rafales-reperes" viewBox="0 0 760 600"'
+      + ' preserveAspectRatio="none" aria-hidden="true"></svg></div>'
+      + '<p id="note-rafales" style="color:var(--texte-faible);font-size:.82rem;margin-top:var(--e3)">'
+      + '</p></div>';
+
     html += '<div class="carte-bloc" style="margin-bottom:var(--e4)">'
       + '<h3 class="section-titre"><span class="etiquette etiquette--modele">Modèle</span> Conditions actuelles</h3>'
       + '<div class="stats">'
@@ -1198,6 +1221,96 @@
       + '</div>';
 
     $('#page-guadeloupe').innerHTML = html;
+    brancherRafales();
+  }
+
+  /**
+   * Carte des rafales prévues.
+   *
+   * L'encart reste caché tant qu'une image n'est pas réellement arrivée : mieux
+   * vaut ne rien montrer qu'un cadre vide qu'on prendrait pour une panne de
+   * l'application. L'échéance affichée est celle que le modèle a servie, pas
+   * celle qu'on a demandée — les deux peuvent différer d'une heure.
+   */
+  function brancherRafales() {
+    var bloc = $('#bloc-rafales');
+    var img = $('#img-rafales');
+    var note = $('#note-rafales');
+    if (!bloc || !img) return;
+
+    /**
+     * Échéance réellement servie par le modèle.
+     *
+     * Le serveur arrondit à l'heure ronde UTC, parce qu'ARPEGE ne publie qu'à
+     * ces heures-là. Le client doit faire le même calcul, sinon l'interface
+     * annonce « 13 h 21 » sous une image valable pour 13 h 00 : sur une
+     * prévision, une heure approximative est une heure fausse.
+     */
+    function echeanceReelle(heures) {
+      var d = new Date();
+      d.setUTCMinutes(0, 0, 0);
+      d.setUTCHours(d.getUTCHours() + heures);
+      return d.toISOString();
+    }
+
+    /**
+     * Repères géographiques posés sur l'image.
+     *
+     * L'image du modèle ne porte ni côte ni nom : des aplats de couleur sans
+     * repère n'apprennent rien à personne. On projette donc les territoires
+     * suivis, dont on connaît déjà les coordonnées. La projection est directe —
+     * l'emprise est demandée en EPSG:4326, où latitude et longitude sont
+     * linéaires — et le SVG s'étire exactement comme l'image.
+     */
+    function poserReperes() {
+      var svg = $('#reperes-rafales');
+      if (!svg) return;
+      // Mêmes valeurs que l'emprise demandée au serveur (src/sources/arpege.js).
+      var sud = 10; var ouest = -70; var nord = 22; var est = -55;
+      var L = 760; var H = 600;
+
+      var elements = (etat.territoires || []).filter(function (t) {
+        return t.position && t.position.lat != null;
+      }).map(function (t) {
+        var x = ((t.position.lon - ouest) / (est - ouest)) * L;
+        var y = ((nord - t.position.lat) / (nord - sud)) * H;
+        if (x < 0 || x > L || y < 0 || y > H) return '';
+        var actif = t.cle === (territoireActif() || {}).cle;
+        return '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' + (actif ? 6 : 4) + '"'
+          + ' class="repere' + (actif ? ' repere--actif' : '') + '"></circle>'
+          + '<text x="' + (x + 10).toFixed(1) + '" y="' + (y + 4).toFixed(1) + '"'
+          + ' class="repere__nom' + (actif ? ' repere__nom--actif' : '') + '">'
+          + echapper(t.nom) + '</text>';
+      });
+
+      svg.innerHTML = elements.join('');
+    }
+
+    function charger(heures) {
+      // L'image est servie par notre propre origine : `img-src 'self'` suffit.
+      // Une première version passait par un blob, que la politique de contenu
+      // rejetait sans un mot — l'encart restait vide sans erreur visible.
+      img.onload = function () { bloc.classList.remove('est-cache'); poserReperes(); };
+      img.onerror = function () { bloc.classList.add('est-cache'); };
+      img.src = '/modele/rafales.png?h=' + heures;
+
+      note.innerHTML = '<strong>Source : Météo-France</strong> — modèle ARPEGE 0,25°, '
+        + 'échéance ' + echapper(heureLocale(echeanceReelle(heures), true))
+        + ' (heure de Guadeloupe). Licence Ouverte 2.0 (Etalab). '
+        + 'Ce sont des rafales <strong>prévues</strong>, pas mesurées : '
+        + 'les stations antillaises ne relèvent pas cette grandeur.';
+    }
+
+    bloc.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-echeance]');
+      if (!b) return;
+      bloc.querySelectorAll('.echeance').forEach(function (x) {
+        x.classList.toggle('echeance--active', x === b);
+      });
+      charger(Number(b.dataset.echeance));
+    });
+
+    charger(0);
   }
 
   // ------------------------------------------------------------ préparation

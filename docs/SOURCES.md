@@ -198,7 +198,53 @@ un nom probable n'est pas un nom vérifié, et il reste donc au repli.
 Les couleurs `0` et `-1` signifient « non évalué » et ne sont jamais affichées
 comme un niveau vert.
 
-### 3.3 Radar — **souscrit mais non exploitable en l'état**
+### 3.3 ARPEGE — **rafales prévues, intégrées**
+
+| | |
+|---|---|
+| API | `ARPEGE` — `/public/arpege/1.0` |
+| Service | `MF-NWP-GLOBAL-ARPEGE-025-GLOBE-WMS` |
+| Quota | 50 requêtes/minute — une image est ensuite gardée une heure |
+| Emprise | monde entier : la seule des cinq à contenir les Antilles |
+
+**AROME ne sert à rien ici** : ses services s'appellent `AROME-001-FRANCE` et
+`AROME-0025-FRANCE`, c'est le modèle métropole. Les services `EUROPE`, `EURAT`
+et `ATOURX` d'ARPEGE s'arrêtent également avant l'Atlantique ouest — vérifié
+sur leurs emprises déclarées. Seul `GLOBE` convient.
+
+Ce qui rend cette source exploitable là où le radar ne l'est pas : le service
+**WMS rend l'image lui-même**, en PNG, sur l'emprise demandée. Rien à décoder,
+aucune dépendance ajoutée — Météo-France calcule, colorie et légende, KDL
+Cyclone relaie en citant la source.
+
+| | |
+|---|---|
+| Couche | `WIND_SPEED_GUST__SPECIFIC_HEIGHT_LEVEL_ABOVE_GROUND` |
+| Style | `FF_RAF__HEIGHT__SHADING` |
+| Emprise | 10°N–22°N, 70°O–55°O (arc antillais) |
+| Échéances | maintenant, +6 h, +12 h, +24 h (heures rondes UTC) |
+| Poids | 17 à 30 Ko selon l'échéance |
+
+**Pourquoi les rafales, et seulement elles** : c'est la grandeur que le réseau
+de stations antillais ne mesure pas — zéro station sur quarante-six — et c'est
+pourtant celle qui décide d'une mise à l'abri. Le reste (vent moyen, pluie,
+pression) est déjà mesuré, ou fourni par Open-Meteo.
+
+L'échéance affichée est calculée à l'heure ronde, exactement comme la requête :
+annoncer « 13 h 21 » sous une image valable pour 13 h 00 serait une erreur.
+
+Deux pièges rencontrés, à ne pas réintroduire :
+
+- **`loading="lazy"` empêchait l'image d'arriver.** Sans elle, l'encart restait
+  vide sans erreur. Le chargement différé est retiré : l'image pèse 20 Ko.
+- **`style="display:none"` est sans effet** : la politique de contenu interdit
+  les styles inline. La visibilité passe par la classe `.est-cache`.
+
+L'image ne porte ni côte ni frontière : les territoires suivis sont projetés
+par-dessus en SVG. La projection est directe, l'emprise étant demandée en
+EPSG:4326 où latitude et longitude sont linéaires.
+
+### 3.4 Radar — **souscrit mais non exploitable en l'état**
 
 | | |
 |---|---|

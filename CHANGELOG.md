@@ -4,6 +4,46 @@ Les dates sont celles du déploiement en production. La version installée est
 lisible sur [`/version.json`](https://cyclone.kdl-tech.fr/version.json) et dans
 la page À propos de l'application.
 
+## 0.14.0 — 14 août 2026
+
+**Les rafales prévues, la grandeur qu'aucune station antillaise ne mesure.**
+Sur les quarante-six stations de Guadeloupe, aucune ne relève les rafales —
+c'est pourtant ce qui décide d'une mise à l'abri. Le modèle ARPEGE les prévoit,
+et Météo-France en fournit directement la carte : la page du territoire affiche
+désormais l'arc antillais avec quatre échéances, maintenant, +6 h, +12 h et
++24 h.
+
+L'heure annoncée est l'heure ronde réellement servie par le modèle, et non
+l'heure courante : sous une image valable pour 13 h 00, afficher « 13 h 21 »
+serait une erreur. L'encart porte l'étiquette « Modèle » et dit explicitement
+que ces rafales sont prévues, non mesurées.
+
+- **Des repères sur la carte** : l'image du modèle ne porte ni côte ni nom. Les
+  territoires suivis sont dessinés par-dessus, la Guadeloupe en bleu KDL. Des
+  aplats de couleur sans repère n'apprennent rien à personne.
+- L'encart disparaît de lui-même si la source ne répond pas : une couche de
+  confort ne doit pas ressembler à une panne.
+
+## 0.13.1 — 14 août 2026
+
+**La limitation du formulaire de retour protégeait tout le monde d'un seul
+visiteur.** Chaque envoi était rattaché à l'adresse vue par l'application ;
+derrière le serveur web, cette adresse est la même pour tous. La limite de trois
+retours par heure s'appliquait donc au public entier : passé trois envois, plus
+personne ne pouvait écrire. Sur la voie de retour d'une bêta publique, le défaut
+méritait d'être corrigé vite.
+
+- La page des retours ne relit plus l'intégralité du fichier à chaque
+  consultation, et la réponse compressée n'est plus recalculée pour chaque
+  visiteur alors que les données ne changent que toutes les cinq minutes.
+- Une trajectoire réduite à un seul point faisait disparaître **silencieusement**
+  toutes les îles de la liste des territoires concernés. Le calcul rend
+  désormais la même forme de résultat quelle que soit la trajectoire.
+- Les flux de mise à jour laissaient un minuteur tourner sur une connexion
+  fermée, et retardaient chaque redémarrage du service.
+- L'application ne réclame plus l'autorisation de géolocalisation, qu'elle
+  n'utilise nulle part.
+
 ## 0.13.0 — 14 août 2026
 
 **La vigilance officielle de Météo-France s'affiche enfin dans l'application.**

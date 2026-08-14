@@ -1365,6 +1365,99 @@ button { font: inherit; color: inherit; }
 }
 .pied a { color: var(--ocean-vif); }
 
+/* Masquage piloté par classe.
+   La politique de contenu interdit les attributs `style` inline : un
+   `style="display:none"` posé en JavaScript ou dans le balisage est ignoré
+   sans le moindre avertissement. Passer par une classe est la seule méthode
+   fiable ici, et elle reste lisible. */
+.est-cache { display: none !important; }
+
+.bloc-modele { margin-bottom: var(--e4); }
+
+/* Carte des rafales prévues (ARPEGE).
+   L'image arrive sur fond transparent : elle est posée sur un aplat sombre,
+   comme la carte principale, car une nappe de couleur se lit mal sur blanc. */
+.echeances {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e2);
+  margin: var(--e3) 0;
+}
+
+.echeance {
+  padding: 0.4em 0.9em;
+  border-radius: 999px;
+  border: 1px solid var(--bordure);
+  background: var(--surface-2);
+  color: var(--texte-doux);
+  font: inherit;
+  font-size: 0.88rem;
+  cursor: pointer;
+  /* Cible tactile confortable, comme le reste des commandes de l'application. */
+  min-height: 40px;
+}
+
+.echeance:hover { border-color: var(--ocean-vif); color: var(--texte); }
+
+.echeance--active {
+  background: var(--ocean);
+  border-color: var(--ocean);
+  color: #fff;
+  font-weight: 600;
+}
+
+.rafales-carte {
+  background: var(--carte-fond, #0d1b2a);
+  border: 1px solid var(--bordure);
+  border-radius: var(--r2, 10px);
+  overflow: hidden;
+  line-height: 0;
+}
+
+.rafales-carte {
+  position: relative;
+}
+
+.rafales-carte img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Repères géographiques posés par-dessus l'image du modèle. */
+.rafales-reperes {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.rafales-reperes .repere {
+  fill: rgba(255, 255, 255, 0.9);
+  stroke: rgba(0, 0, 0, 0.55);
+  stroke-width: 1.5;
+}
+
+.rafales-reperes .repere--actif {
+  fill: var(--kdl-bleu, #1f5278);
+  stroke: #fff;
+  stroke-width: 2.5;
+}
+
+.rafales-reperes .repere__nom {
+  fill: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  /* Un liseré sombre garde le nom lisible, que la nappe soit claire ou foncée. */
+  paint-order: stroke;
+  stroke: rgba(0, 0, 0, 0.75);
+  stroke-width: 3.5;
+  stroke-linejoin: round;
+}
+
+.rafales-reperes .repere__nom--actif { font-size: 17px; }
+
 /* Vigilance officielle Météo-France.
    Les quatre couleurs sont normées : elles reprennent l'échelle officielle et
    non la palette de menace KDL, car il s'agit de relayer une information
