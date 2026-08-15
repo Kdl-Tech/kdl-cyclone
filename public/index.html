@@ -80,6 +80,11 @@
   </button>
 </nav>
 
+<!-- Vigilance officielle Météo-France : hors de <main>, donc visible sur toutes
+     les vues. Rempli par rendreBandeauVigilance() à chaque collecte ; masqué
+     tant qu'aucune vigilance ne s'applique au territoire choisi. -->
+<div id="bandeau-vigilance" class="vigi est-cache" role="status" aria-live="polite"></div>
+
 <main class="page" id="contenu">
 
   <!-- ------------------------------------------------------------ ACCUEIL -->

@@ -1512,6 +1512,126 @@ button { font: inherit; color: inherit; }
   max-width: 60ch;
 }
 
+/* ---------------------------------------------------- bandeau de vigilance
+
+   Le bandeau qui court en haut de toutes les vues. C'est le premier élément lu
+   à l'ouverture : il dit le niveau officiel du territoire choisi et rien
+   d'autre. Ses couleurs sont FIXES, identiques en clair et en sombre — une
+   vigilance orange doit avoir exactement la même teinte à toute heure, comme
+   sur la carte de Météo-France ; la teinter selon le thème reviendrait à
+   réinterpréter une information réglementaire. Le contraste du texte est donc
+   choisi par niveau, jamais hérité. */
+.vigi {
+  --vigi-fond: var(--surface-2);
+  --vigi-texte: var(--texte);
+  --vigi-bord: var(--bordure);
+  --vigi-accent: var(--n0-vif);
+  background: var(--vigi-fond);
+  color: var(--vigi-texte);
+  border-bottom: 1px solid var(--vigi-bord);
+  box-shadow: var(--ombre-1);
+}
+
+.vigi--jaune  { --vigi-fond: #ffd23f; --vigi-texte: #372900; --vigi-bord: #d9a800; --vigi-accent: #6b5100; }
+.vigi--orange { --vigi-fond: #f2811d; --vigi-texte: #331700; --vigi-bord: #c25f06; --vigi-accent: #5c2a00; }
+.vigi--rouge  { --vigi-fond: #d92b1f; --vigi-texte: #fff4f2; --vigi-bord: #a51a10; --vigi-accent: #ffd9d4; }
+/* Au vert, le bandeau se fait discret : l'absence de danger s'annonce
+   calmement, elle ne doit pas occuper la place d'une alerte. */
+.vigi--vert {
+  --vigi-fond: color-mix(in srgb, var(--n0-vif) 12%, var(--surface));
+  --vigi-texte: var(--texte);
+  --vigi-bord: color-mix(in srgb, var(--n0-vif) 34%, transparent);
+  --vigi-accent: var(--n0);
+}
+
+.vigi__interieur {
+  max-width: var(--largeur-max);
+  margin: 0 auto;
+  padding: var(--e3) var(--e4);
+  display: flex;
+  align-items: center;
+  gap: var(--e3);
+  flex-wrap: wrap;
+}
+
+.vigi__icone {
+  flex: none;
+  width: 30px; height: 30px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.vigi__corps { min-width: 0; flex: 1 1 22ch; }
+
+.vigi__titre {
+  font-size: 1.02rem;
+  font-weight: 780;
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+}
+.vigi__zone { font-weight: 600; opacity: 0.86; }
+
+.vigi__phenos {
+  margin-top: 2px;
+  font-size: 0.92rem;
+  font-weight: 620;
+  line-height: 1.35;
+}
+
+.vigi__source {
+  margin-top: 2px;
+  font-size: 0.76rem;
+  opacity: 0.82;
+}
+
+.vigi__actions { display: flex; align-items: center; gap: var(--e2); margin-left: auto; }
+
+.vigi__bouton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px var(--e3);
+  border-radius: var(--r-pill, 999px);
+  border: 1px solid color-mix(in srgb, currentColor 38%, transparent);
+  background: color-mix(in srgb, currentColor 10%, transparent);
+  color: inherit;
+  font: inherit;
+  font-size: 0.83rem;
+  font-weight: 680;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--t-rapide), border-color var(--t-rapide);
+}
+.vigi__bouton:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
+.vigi__bouton svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Le rouge respire : au niveau maximal, un battement très lent attire l'œil
+   sans jamais clignoter. Coupé si la personne a demandé moins d'animation. */
+.vigi--rouge { animation: vigi-battement 3.4s ease-in-out infinite; }
+@keyframes vigi-battement {
+  0%, 100% { box-shadow: var(--ombre-1); }
+  50% { box-shadow: 0 0 0 3px color-mix(in srgb, #d92b1f 40%, transparent); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vigi--rouge { animation: none; }
+}
+
+@media (max-width: 600px) {
+  .vigi__interieur { padding: var(--e3); gap: var(--e2); }
+  .vigi__icone { width: 24px; height: 24px; }
+  .vigi__titre { font-size: 0.95rem; }
+  .vigi__actions { margin-left: 0; width: 100%; }
+  .vigi__bouton { flex: 1 1 auto; justify-content: center; }
+}
+
+@media print {
+  .vigi__actions { display: none; }
+}
+
 /* Provenance des données, rappelée en pied sur toutes les vues.
    Chaque source porte une pastille d'état : verte si elle a répondu à la
    dernière collecte, rouge sinon. La couleur ne porte jamais l'information

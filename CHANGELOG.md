@@ -4,6 +4,23 @@ Les dates sont celles du déploiement en production. La version installée est
 lisible sur [`/version.json`](https://cyclone.kdl-tech.fr/version.json) et dans
 la page À propos de l'application.
 
+## 0.15.0 — 15 août 2026
+
+**La vigilance de Météo-France s'affiche en haut de chaque page.** Elle était
+déjà collectée, mais il fallait ouvrir la page de son territoire pour la lire.
+C'est l'information qui fait autorité : elle se voit désormais dès l'ouverture,
+sur toutes les vues, dans la couleur du niveau annoncé — vert, jaune, orange ou
+rouge — avec les phénomènes concernés et l'heure du bulletin.
+
+La couleur est identique en thème clair et en thème sombre : une vigilance
+orange doit avoir la même teinte à toute heure du jour. Le niveau reste écrit en
+toutes lettres, car une couleur seule ne suffit jamais à porter l'information.
+Quand le cyclone est lui-même en vigilance, il est nommé en premier. Au vert, le
+bandeau se fait discret. Hors connexion, ou si la collecte a plus de trois
+heures, il dit clairement que l'information n'est plus actualisée. Sur les
+territoires que Météo-France ne couvre pas — Dominique, Sainte-Lucie, Barbade,
+Antigua, Trinité — aucun bandeau n'apparaît : leurs autorités sont ailleurs.
+
 ## 0.14.3 — 14 août 2026
 
 **La proposition de mise à jour ne se cache plus pendant une alerte.** Elle

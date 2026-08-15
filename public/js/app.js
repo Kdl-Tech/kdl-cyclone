@@ -262,6 +262,8 @@
     externe: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6M10 14 21 3"/></svg>',
     horsLigne: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M1 1l22 22M16.7 11.1A6 6 0 0 0 8 8.6M5 12.6A6 6 0 0 0 6 20h11"/></svg>',
     calme: '<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="22"/><path d="M32 14c8 6 8 30 0 36M32 14c-8 6-8 30 0 36"/></svg>',
+    alerte: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.3 3.9 1.9 18.1A2 2 0 0 0 3.6 21h16.8a2 2 0 0 0 1.7-2.9L13.7 3.9a2 2 0 0 0-3.4 0"/><path d="M12 9v4.5M12 17h.01"/></svg>',
+    bouclier: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4.5 6v5.5c0 4.6 3.1 8.4 7.5 9.5 4.4-1.1 7.5-4.9 7.5-9.5V6z"/><path d="m9 12 2.2 2.2L15.5 10"/></svg>',
   };
 
   // -------------------------------------------------------------- chargement
@@ -397,6 +399,7 @@
   }
 
   function rendreTout() {
+    rendreBandeauVigilance();
     rendreBandeauConnexion();
     rendreCoquille();
     rendreSituation();
@@ -416,6 +419,89 @@
   function ageDonnees() {
     if (!etat || !etat.genereLe) return Infinity;
     return Date.now() - new Date(etat.genereLe).getTime();
+  }
+
+  /**
+   * Bandeau de vigilance officielle, en haut de toutes les vues.
+   *
+   * Sur un territoire français, la vigilance de Météo-France fait autorité :
+   * elle doit être lue avant tout le reste, sans avoir à ouvrir une page. Le
+   * bandeau la relaie telle quelle — niveau, phénomènes, heure d'émission — et
+   * ne la reformule jamais. Il suit l'état comme le reste de l'interface :
+   * chaque collecte, chaque changement de territoire le redessine.
+   *
+   * Hors territoires français (Dominique, Sainte-Lucie, Barbade, Antigua,
+   * Trinité), Météo-France n'a aucune autorité : le bandeau disparaît plutôt
+   * que d'afficher une vigilance qui ne s'applique pas.
+   */
+  function rendreBandeauVigilance() {
+    var zone = $('#bandeau-vigilance');
+    if (!zone) return;
+
+    var terr = territoireActif();
+    var vig = terr && terr.vigilanceOfficielle;
+    if (!vig || !vig.niveau) {
+      zone.className = 'vigi est-cache';
+      zone.innerHTML = '';
+      return;
+    }
+
+    var phenomenes = vig.phenomenes || [];
+    var alerte = vig.niveau !== 'vert';
+    // Les phénomènes réellement en vigilance, du plus grave au moins grave :
+    // c'est la liste servie par la source, déjà triée.
+    var actifs = phenomenes.filter(function (p) { return p.niveau && p.niveau !== 'vert'; });
+    var cyclone = phenomenes.filter(function (p) { return p.nom === 'Cyclone'; })[0];
+
+    // Le niveau de chaque phénomène n'est écrit que s'il diffère du niveau
+    // d'ensemble : sinon la phrase répéterait « orange » à chaque mot.
+    var listePhenos = actifs.map(function (p) {
+      return echapper(p.nom) + (p.niveau === vig.niveau ? '' : ' (' + echapper(p.niveau) + ')');
+    }).join(' · ');
+
+    var titre = alerte
+      ? 'Vigilance ' + echapper(vig.niveau)
+      : 'Aucune vigilance en cours';
+
+    var ligne2 = alerte
+      ? listePhenos
+      : 'Météo-France ne signale aucun phénomène dangereux à cette heure.';
+
+    // Le cyclone est la raison d'être de l'application : dès qu'il est lui-même
+    // en vigilance, il est nommé en clair, avant les autres phénomènes.
+    if (alerte && cyclone && cyclone.niveau !== 'vert') {
+      var autres = actifs.filter(function (p) { return p.nom !== 'Cyclone'; }).map(function (p) {
+        return echapper(p.nom) + (p.niveau === vig.niveau ? '' : ' (' + echapper(p.niveau) + ')');
+      }).join(' · ');
+      ligne2 = 'CYCLONE — vigilance ' + echapper(cyclone.niveau) + (autres ? ' · ' + autres : '');
+    }
+
+    zone.className = 'vigi vigi--' + echapper(vig.niveau);
+    zone.innerHTML = '<div class="vigi__interieur">'
+      + (alerte ? ICONES.alerte : ICONES.bouclier).replace('<svg ', '<svg class="vigi__icone" ')
+      + '<div class="vigi__corps">'
+      + '<p class="vigi__titre">' + titre
+      + ' <span class="vigi__zone">— ' + echapper(vig.zone || terr.nom) + '</span></p>'
+      + '<p class="vigi__phenos">' + ligne2 + '</p>'
+      + '<p class="vigi__source">Météo-France · bulletin émis à '
+      + heureLocale(vig.emisLe, true) + ' (heure locale)'
+      + (vig.perime ? ' · dernière vigilance connue, la source n\'a pas répondu au dernier appel' : '')
+      // Hors connexion ou collecte interrompue : le bandeau ne doit jamais
+      // laisser croire qu'il montre la situation de l'instant.
+      + (horsLigne || ageDonnees() > 3 * 3600 * 1000
+        ? ' · <strong>information non actualisée, vérifiez sur Météo-France</strong>'
+        : '')
+      + '</p>'
+      + '</div>'
+      + '<div class="vigi__actions">'
+      // Au vert, il n'y a rien à détailler : un seul lien, et le bandeau reste
+      // court. En alerte, l'accès au détail passe avant tout.
+      + (alerte ? '<button class="vigi__bouton" type="button" data-vers="guadeloupe">Détails</button>' : '')
+      + '<a class="vigi__bouton" href="'
+      + echapper(vig.lien || 'https://vigilance.meteofrance.fr/fr')
+      + '" target="_blank" rel="noopener noreferrer">Météo-France' + ICONES.externe + '</a>'
+      + '</div>'
+      + '</div>';
   }
 
   function rendreBandeauConnexion() {
