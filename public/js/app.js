@@ -1612,6 +1612,20 @@
     horaires: 'Du lundi au vendredi, 8 h – 18 h · fermé le week-end',
     tiktok: 'https://www.tiktok.com/@kdltech',
     facebook: 'https://www.facebook.com/profile.php?id=61588286166391&locale=fr_FR',
+    // Identité légale officielle (avis SIRENE du 21/08/2026). Source unique de
+    // vérité : KDL_BRAND/legal.json. Ne jamais inventer une valeur absente.
+    exploitant: 'Karim Laurent De Lucia',
+    formeJuridique: 'Entrepreneur individuel',
+    siren: '423 471 481',
+    siret: '423 471 481 00022',
+    ape: '95.11Z',
+    apeLibelle: 'Réparation d\'ordinateurs et d\'équipements périphériques',
+    adresse: 'LD Caraque, Rue Narcisse Louis, 97139 Les Abymes, Guadeloupe',
+    tva: 'TVA non applicable, article 293 B du CGI',
+    hebergeur: 'OVH SAS',
+    hebergeurAdresse: '2 rue Kellermann, 59100 Roubaix, France',
+    hebergeurTelephone: '1007',
+    hebergeurSite: 'https://www.ovhcloud.com',
   };
 
   /**
@@ -1761,6 +1775,94 @@
 
     $('#page-apropos').innerHTML = html;
     remplirVersion();
+  }
+
+  /**
+   * Mentions légales. KDL Cyclone est un site à part entière : il porte donc sa
+   * propre identité d'éditeur, son hébergeur et ses conditions, sans renvoyer
+   * l'internaute vers kdl-tech.fr pour une information qui lui est obligatoire.
+   * Toutes les valeurs viennent de KDLTECH, alimenté par KDL_BRAND/legal.json.
+   */
+  function rendreMentions() {
+    var html = '<h2 style="font-size:1.7rem;margin-bottom:var(--e2)">Mentions légales</h2>'
+      + '<p style="color:var(--texte-doux);font-size:1.02rem;margin-bottom:var(--e6);max-width:62ch">'
+      + 'Qui édite KDL Cyclone, où le service est hébergé, et dans quelles conditions il s\'utilise.</p>';
+
+    html += '<div class="carte-bloc" style="margin-bottom:var(--e4)">'
+      + '<h3 class="section-titre section-titre--kdl">Éditeur du site</h3>'
+      + '<dl class="contact-liste">'
+      + '<div><dt>Nom commercial</dt><span>KDL TECH (KDLTech)</span></div>'
+      + '<div><dt>Exploitant</dt><span>' + KDLTECH.exploitant + '</span></div>'
+      + '<div><dt>Forme juridique</dt><span>' + KDLTECH.formeJuridique + '</span></div>'
+      + '<div><dt>SIRET</dt><span>' + KDLTECH.siret + '</span></div>'
+      + '<div><dt>SIREN</dt><span>' + KDLTECH.siren + '</span></div>'
+      + '<div><dt>Code APE</dt><span>' + KDLTECH.ape + ' — ' + KDLTECH.apeLibelle + '</span></div>'
+      + '<div><dt>Siège</dt><span>' + KDLTECH.adresse + '</span></div>'
+      + '<div><dt>TVA</dt><span>' + KDLTECH.tva + '</span></div>'
+      + '<div><dt>Directeur de la publication</dt><span>' + KDLTECH.exploitant + '</span></div>'
+      + '<div><dt>Courriel</dt><a href="mailto:' + KDLTECH.email + '" data-kdltech>' + KDLTECH.email + '</a></div>'
+      + '<div><dt>Téléphone</dt><a href="tel:+590690706008" data-kdltech>' + KDLTECH.telephone + '</a></div>'
+      + '<div><dt>Site</dt><a href="' + KDLTECH.decouvrir + '" target="_blank" rel="noopener noreferrer" data-kdltech>kdl-tech.fr</a></div>'
+      + '</dl></div>';
+
+    html += '<div class="carte-bloc" style="margin-bottom:var(--e4)">'
+      + '<h3 class="section-titre">Hébergement</h3>'
+      + '<dl class="contact-liste">'
+      + '<div><dt>Hébergeur</dt><span>' + KDLTECH.hebergeur + '</span></div>'
+      + '<div><dt>Adresse</dt><span>' + KDLTECH.hebergeurAdresse + '</span></div>'
+      + '<div><dt>Téléphone</dt><span>' + KDLTECH.hebergeurTelephone + '</span></div>'
+      + '<div><dt>Site</dt><a href="' + KDLTECH.hebergeurSite + '" target="_blank" rel="noopener noreferrer">ovhcloud.com</a></div>'
+      + '</dl>'
+      + '<p style="max-width:66ch;margin-top:var(--e3);color:var(--texte-doux)">'
+      + 'Le service tourne sur un serveur loué par KDLTech chez cet hébergeur, en France. '
+      + 'Aucune donnée n\'est confiée à un service tiers.</p>'
+      + '</div>';
+
+    html += '<div class="carte-bloc" style="margin-bottom:var(--e4)">'
+      + '<h3 class="section-titre">Nature du service et responsabilité</h3>'
+      + '<p style="max-width:66ch;margin-bottom:var(--e3)">'
+      + 'KDL Cyclone est un service d\'information gratuit. Il ne fait l\'objet d\'aucune vente, '
+      + 'd\'aucun abonnement et d\'aucune création de compte.</p>'
+      + '<div class="bandeau bandeau--attention" style="margin-bottom:var(--e3)">' + ICONES.info
+      + '<div>KDLTech n\'est ni un organisme météorologique officiel, ni un partenaire de Météo-France, '
+      + 'du National Hurricane Center, de la préfecture ou de la sécurité civile. En cas d\'alerte, '
+      + 'suivez exclusivement les consignes officielles.</div></div>'
+      + '<p style="max-width:66ch">'
+      + 'Les informations sont fournies à titre indicatif, sans garantie de disponibilité ni '
+      + 'd\'exactitude, et ne se substituent en aucun cas à la vigilance officielle. '
+      + 'L\'éditeur ne peut être tenu responsable d\'une décision prise sur la seule base de '
+      + 'ce service.</p>'
+      + '</div>';
+
+    html += '<div class="carte-bloc" style="margin-bottom:var(--e4)">'
+      + '<h3 class="section-titre">Données personnelles</h3>'
+      + '<p style="max-width:66ch;margin-bottom:var(--e3)">'
+      + 'KDL Cyclone ne demande aucun compte, n\'utilise aucun cookie publicitaire et ne dépose '
+      + 'aucun traceur tiers. Les préférences (thème, territoire, liste de préparation) restent '
+      + 'dans le navigateur, sur l\'appareil.</p>'
+      + '<p style="max-width:66ch;margin-bottom:var(--e3)">'
+      + 'La mesure d\'audience se limite à des compteurs agrégés : aucune adresse IP, aucun '
+      + 'identifiant d\'appareil, aucune position géographique et aucun parcours individuel ne '
+      + 'sont enregistrés. Aucune donnée n\'est vendue ni transmise à un tiers.</p>'
+      + '<p style="max-width:66ch">'
+      + 'Pour toute question relative aux données, écrivez à '
+      + '<a href="mailto:' + KDLTECH.email + '" data-kdltech>' + KDLTECH.email + '</a>. '
+      + 'Une réclamation peut être adressée à la CNIL '
+      + '(<a href="https://www.cnil.fr" target="_blank" rel="noopener noreferrer">cnil.fr</a>).</p>'
+      + '</div>';
+
+    html += '<div class="carte-bloc">'
+      + '<h3 class="section-titre">Propriété intellectuelle et sources</h3>'
+      + '<p style="max-width:66ch;margin-bottom:var(--e3)">'
+      + 'Le nom KDL TECH, le logo et l\'application KDL Cyclone appartiennent à l\'éditeur. '
+      + 'Les données météorologiques restent la propriété de leurs producteurs — National Hurricane '
+      + 'Center (NOAA), Météo-France, Open-Meteo — et sont reprises selon leurs conditions '
+      + 'de réutilisation.</p>'
+      + '<p style="max-width:66ch">'
+      + '<button class="lien-texte" type="button" data-vers="sources">Voir le détail des sources et de la méthode</button></p>'
+      + '</div>';
+
+    $('#page-mentions').innerHTML = html;
   }
 
   // ----------------------------------------------------------- installation
@@ -3165,6 +3267,7 @@
   var CHEMINS = {
     accueil: '/', carte: '/carte', guadeloupe: '/guadeloupe',
     preparation: '/preparation', sources: '/sources', apropos: '/a-propos',
+    mentions: '/mentions-legales',
     installer: '/installer',
     beta: '/beta',
     meteo: '/meteo',
@@ -3232,6 +3335,7 @@
     if (vue === 'carte') initialiserCarte();
     if (vue === 'preparation') rendrePreparation();
     if (vue === 'apropos') rendreApropos();
+    if (vue === 'mentions') rendreMentions();
     if (vue === 'installer') rendreInstaller();
     if (vue === 'beta') rendreBeta();
     if (vue === 'meteo') rendreMeteo();
@@ -3249,6 +3353,7 @@
     var titres = {
       accueil: 'Situation générale', carte: 'Carte de l\'Atlantique', guadeloupe: terr.nom,
       preparation: 'Préparation', sources: 'Sources et méthode', apropos: 'À propos',
+      mentions: 'Mentions légales',
       installer: 'Installer l\'application',
       beta: 'Bêta publique',
       meteo: 'Météo locale',
@@ -3813,7 +3918,7 @@
   var cheminInitial = location.pathname;
   var routeInitiale = vueDeChemin(cheminInitial);
   var vueDemandee = new URLSearchParams(location.search).get('vue');
-  if (['carte', 'guadeloupe', 'preparation', 'sources', 'apropos', 'installer', 'beta', 'meteo'].indexOf(vueDemandee) !== -1) {
+  if (['carte', 'guadeloupe', 'preparation', 'sources', 'apropos', 'mentions', 'installer', 'beta', 'meteo'].indexOf(vueDemandee) !== -1) {
     routeInitiale = { vue: vueDemandee };
   }
   allerA(routeInitiale.vue, { id: routeInitiale.id, sansHistorique: true });

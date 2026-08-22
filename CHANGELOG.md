@@ -4,6 +4,22 @@ Les dates sont celles du déploiement en production. La version installée est
 lisible sur [`/version.json`](https://cyclone.kdl-tech.fr/version.json) et dans
 la page À propos de l'application.
 
+## 0.16.0 — 21 août 2026
+
+**KDL Cyclone porte désormais sa propre identité légale.** L'application est un
+site à part entière : elle ne renvoyait pourtant vers aucune mention légale qui
+lui soit propre, et laissait cette information au site de KDLTech.
+
+Une page « Mentions légales » est ajoutée, accessible depuis le pied de toutes
+les vues : l'éditeur et son identité officielle, l'hébergeur, la nature exacte
+du service et ses limites de responsabilité, le traitement des données
+personnelles, et la propriété des données météorologiques reprises. Le pied de
+page rappelle en une ligne qui édite le service, sur chaque écran.
+
+Les données structurées lues par les moteurs de recherche sont complétées de la
+même façon : dénomination légale, identifiants d'entreprise et adresse
+complète. Rien n'est déclaré qui ne figure sur l'avis officiel.
+
 ## 0.15.0 — 15 août 2026
 
 **La vigilance de Météo-France s'affiche en haut de chaque page.** Elle était

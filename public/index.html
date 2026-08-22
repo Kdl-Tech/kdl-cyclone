@@ -221,6 +221,11 @@
     <div id="page-installer"></div>
   </section>
 
+  <!-- ---------------------------------------------------- MENTIONS LÉGALES -->
+  <section class="vue" data-vue="mentions" aria-label="Mentions légales">
+    <div id="page-mentions"></div>
+  </section>
+
   <!-- Signature KDLTech : présente sur toutes les vues, jamais intrusive. -->
   <aside class="signature" id="signature-kdltech"></aside>
 
@@ -237,7 +242,16 @@
     <p style="margin-top:var(--e2)">
       <button class="lien-texte" type="button" data-vers="apropos">À propos</button> ·
       <button class="lien-texte" type="button" data-vers="sources">Sources et méthode</button> ·
+      <button class="lien-texte" type="button" data-vers="mentions">Mentions légales</button> ·
       <a href="https://kdl-tech.fr/carte.html" target="_blank" rel="noopener noreferrer" data-kdltech>Contact KDLTech</a>
+    </p>
+    <!-- Identité légale de l'éditeur : obligatoire, visible depuis toutes les
+         vues, et reprise telle quelle de KDL_BRAND/legal.json. -->
+    <p style="margin-top:var(--e2);font-size:.8rem;color:var(--texte-faible)">
+      Édité par <strong>KDL TECH</strong> — Karim Laurent De Lucia, entrepreneur individuel ·
+      SIRET 423 471 481 00022 · APE 95.11Z ·
+      LD Caraque, Rue Narcisse Louis, 97139 Les Abymes, Guadeloupe ·
+      TVA non applicable, article 293 B du CGI · Hébergeur : OVH SAS.
     </p>
     <!-- Provenance vivante : qui fournit quoi, et dans quel état, à cette
          minute. Rempli par rendreProvenance() ; reste vide tant que l'état

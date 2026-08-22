@@ -30,7 +30,7 @@ export const KDLTECH = {
   email: 'karim.delucia@kdl-tech.fr',
   ville: 'Les Abymes',
   region: 'Guadeloupe',
-  pays: 'FR',
+  pays: 'GP',
   zoneIntervention: 'Les Abymes et alentours, Guadeloupe',
   horaires: 'Du lundi au vendredi, 8 h – 18 h. Fermé le week-end.',
   tiktok: 'https://www.tiktok.com/@kdltech',
@@ -38,6 +38,28 @@ export const KDLTECH = {
   presentation:
     'KDLTech accompagne particuliers et professionnels en dépannage informatique, '
     + 'assistance à distance, création de sites web et développement d\'applications intelligentes.',
+  // ---- Identité légale officielle (avis SIRENE du 21/08/2026).
+  // Source unique de vérité : /home/skyme/KDL_BRAND/legal.json.
+  // Ne jamais inventer une valeur absente de ce fichier.
+  exploitant: 'Karim Laurent De Lucia',
+  formeJuridique: 'Entrepreneur individuel',
+  siren: '423 471 481',
+  sirenBrut: '423471481',
+  siret: '423 471 481 00022',
+  siretBrut: '42347148100022',
+  ape: '95.11Z',
+  apeLibelle: "Réparation d'ordinateurs et d'équipements périphériques",
+  immatriculeDepuis: '2026-08-18',
+  rue: 'LD Caraque, Rue Narcisse Louis',
+  codePostal: '97139',
+  adresseComplete: 'LD Caraque, Rue Narcisse Louis, 97139 Les Abymes, Guadeloupe',
+  tva: 'TVA non applicable, article 293 B du CGI',
+  hebergeur: {
+    nom: 'OVH SAS',
+    adresse: '2 rue Kellermann, 59100 Roubaix, France',
+    telephone: '1007',
+    site: 'https://www.ovhcloud.com',
+  },
   presentationCyclone:
     'KDL Cyclone est un service gratuit conçu en Guadeloupe par KDLTech pour rendre la veille '
     + 'tropicale plus claire, accessible et utile aux habitants des Antilles.',
@@ -108,6 +130,14 @@ export const PAGES = {
       + "depuis votre navigateur et sans magasin d'applications. Gratuite, sans publicité, "
       + "sans compte, et consultable hors connexion.",
   },
+  '/mentions-legales': {
+    vue: 'mentions',
+    titre: 'Mentions légales — KDL Cyclone',
+    description:
+      "Éditeur, identité légale, hébergeur et conditions d'utilisation de KDL Cyclone : "
+      + "service gratuit édité par KDL TECH (Karim Laurent De Lucia, entrepreneur individuel, "
+      + "SIRET 423 471 481 00022) aux Abymes, en Guadeloupe.",
+  },
   '/a-propos': {
     vue: 'apropos',
     titre: 'À propos — KDL Cyclone, un service gratuit KDLTech en Guadeloupe',
@@ -147,14 +177,24 @@ export function donneesStructurees(page, chemin) {
     '@type': 'Organization',
     '@id': `${KDLTECH.site}#organisation`,
     name: KDLTECH.nom,
-    legalName: KDLTECH.nomLegal,
+    legalName: KDLTECH.exploitant,
+    alternateName: KDLTECH.nomLegal,
     url: KDLTECH.site,
+    foundingDate: KDLTECH.immatriculeDepuis,
+    // Identifiants officiels : ils lèvent toute ambiguïté sur l'éditeur du service.
+    identifier: [
+      { '@type': 'PropertyValue', propertyID: 'SIRET', value: KDLTECH.siretBrut },
+      { '@type': 'PropertyValue', propertyID: 'SIREN', value: KDLTECH.sirenBrut },
+      { '@type': 'PropertyValue', propertyID: 'APE', value: KDLTECH.ape },
+    ],
     email: KDLTECH.email,
     telephone: KDLTECH.telephoneE164,
     description: KDLTECH.presentation,
     areaServed: { '@type': 'Place', name: KDLTECH.zoneIntervention },
     address: {
       '@type': 'PostalAddress',
+      streetAddress: KDLTECH.rue,
+      postalCode: KDLTECH.codePostal,
       addressLocality: KDLTECH.ville,
       addressRegion: KDLTECH.region,
       addressCountry: KDLTECH.pays,
@@ -249,7 +289,7 @@ export function sitemap(systemes = []) {
   const maintenant = new Date().toISOString().slice(0, 10);
   const entrees = Object.entries(PAGES).map(([chemin, p]) => ({
     url: SITE.base + (chemin === '/' ? '/' : chemin),
-    priorite: chemin === '/' ? '1.0' : chemin === '/preparation' ? '0.8' : '0.7',
+    priorite: chemin === '/' ? '1.0' : chemin === '/preparation' ? '0.8' : chemin === '/mentions-legales' ? '0.3' : '0.7',
     frequence: chemin === '/' || chemin === '/carte' ? 'hourly' : 'weekly',
   }));
 

@@ -31,7 +31,7 @@ const EVENEMENTS = new Set([
 ]);
 
 const PAGES_VALIDES = new Set([
-  'accueil', 'carte', 'guadeloupe', 'preparation', 'sources', 'apropos', 'systeme',
+  'accueil', 'carte', 'guadeloupe', 'preparation', 'sources', 'apropos', 'mentions', 'systeme',
 ]);
 
 let compteurs = null;
