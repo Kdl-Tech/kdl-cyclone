@@ -689,7 +689,7 @@ function surveiller(etatCourant, precedent) {
   };
 }
 
-function resumeSituation(systemes, risque) {
+export function resumeSituation(systemes, risque) {
   const n = systemes.length;
   const nommes = systemes.filter((s) => s.nom);
   const menacants = systemes.filter((s) => s.menace && s.menace.niveau !== 'aucun' && s.menace.niveau !== 'veille');
@@ -729,11 +729,33 @@ function resumeSituation(systemes, risque) {
   }
 
   const principal = menacants[0];
+
+  /**
+   * Un système encore très éloigné ne se raconte pas comme une menace proche.
+   *
+   * Signalé par Karim le 2026-08-24 : l'accueil titrait « Un système est à
+   * surveiller pour la Guadeloupe » pour une zone pas encore formée, à
+   * 4 669 km, juste sous un bandeau « aucune vigilance en cours ».
+   *
+   * Seul le vocabulaire change ici. **Le niveau de risque calculé par
+   * `evaluateThreat` n'est pas touché** : le système reste suivi, classé et
+   * affiché exactement comme avant. Une application qui annonce une menace
+   * proche pour un système au large de l'Afrique dépense la confiance dont
+   * elle aura besoin le jour où le système sera réellement à 800 km.
+   */
+  const LOINTAIN_KM = 2500;
+  const distances = menacants
+    .map((m) => m.menace && m.menace.distanceKm)
+    .filter((d) => Number.isFinite(d));
+  const lointain = distances.length > 0 && Math.min(...distances) > LOINTAIN_KM;
+
+  let titre;
+  if (risque.code === 'imminent') titre = 'Un système approche des Petites Antilles.';
+  else if (lointain) titre = 'Un système lointain est suivi pour la Guadeloupe.';
+  else titre = 'Un système est à surveiller pour la Guadeloupe.';
+
   return {
-    titre:
-      risque.code === 'imminent'
-        ? `Un système approche des Petites Antilles.`
-        : `Un système est à surveiller pour la Guadeloupe.`,
+    titre,
     detail: principal.menace.message,
     ton: risque.code === 'imminent' ? 'alerte' : 'attention',
   };

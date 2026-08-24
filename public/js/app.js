@@ -611,10 +611,33 @@
 
     var premier = (etat.systemes || []).find(function (x) { return x.id === concernes[0].id; });
     var m = premier ? menacePour(premier) : {};
+
+    // Même règle que le collecteur : au-delà de cette distance, on parle de
+    // suivi et non de surveillance rapprochée. Le niveau de risque, lui, est
+    // inchangé — seul le mot affiché l'est. Voir src/collector.js.
+    var LOINTAIN_KM = 2500;
+    var plusProche = null;
+    concernes.forEach(function (c) {
+      var s = (etat.systemes || []).find(function (x) { return x.id === c.id; });
+      var d = s ? distancePour(s) : null;
+      if (typeof d === 'number' && (plusProche === null || d < plusProche)) plusProche = d;
+    });
+    var lointain = plusProche !== null && plusProche > LOINTAIN_KM;
+    var ou = ' pour ' + (terr.article || '') + terr.nom + '.';
+
+    var titre;
+    if (concernes.length > 1) {
+      titre = lointain
+        ? concernes.length + ' systèmes lointains sont suivis' + ou
+        : concernes.length + ' systèmes sont à surveiller' + ou;
+    } else {
+      titre = lointain
+        ? 'Un système lointain est suivi' + ou
+        : 'Un système est à surveiller' + ou;
+    }
+
     return {
-      titre: concernes.length > 1
-        ? concernes.length + ' systèmes sont à surveiller pour ' + (terr.article || '') + terr.nom + '.'
-        : 'Un système est à surveiller pour ' + (terr.article || '') + terr.nom + '.',
+      titre: titre,
       detail: m.message || '',
       ton: terr.risque.niveau === 'imminent' ? 'alerte' : 'attention',
     };
