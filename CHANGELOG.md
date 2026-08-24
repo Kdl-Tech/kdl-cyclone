@@ -4,6 +4,28 @@ Les dates sont celles du déploiement en production. La version installée est
 lisible sur [`/version.json`](https://cyclone.kdl-tech.fr/version.json) et dans
 la page À propos de l'application.
 
+## 0.18.0 — 24 août 2026
+
+**Les zones surveillées affichent leur numéro d'investigation quand le NHC
+l'attribue.** Le bulletin TWO numérote ses zones (1, 2…) sans dire qu'un
+« Invest 95L » y correspond ; ce numéro est pourtant le premier nom officiel
+d'une perturbation, celui que reprennent les sites spécialisés.
+
+Les numéros sont lus dans les fichiers ATCF de meilleure trajectoire du NHC
+et rattachés à la zone du bulletin qui contient leur dernier relevé. La carte,
+la liste, la fiche et le partage disent alors « Invest 95L · zone 1 » ; la
+fiche reprend le vent et la pression estimés du relevé. L'adresse de la fiche
+passe à `/systeme/invest-95l`, l'ancienne restant valable. Une zone sans
+Invest garde son numéro de bulletin.
+
+**Le cône de prévision officiel s'affiche à nouveau.** Le NHC désigne
+aujourd'hui son cône par le champ `trackCone` de `CurrentStorms.json`, dans une
+archive qui réunit cône, ligne et points d'échéance ; l'application cherchait
+un champ disparu et lisait le premier shapefile venu — la ligne — si bien
+qu'aucun cône n'était jamais chargé. Le cône est lu dans la bonne couche, les
+points d'échéance sont posés sur la carte (« +24 h », « +48 h »…) et la fiche
+donne, pour chaque échéance, le stade prévu et le vent maximal.
+
 ## 0.17.0 — 24 août 2026
 
 **Chaque système affiche désormais le sens de son déplacement, et son nom est

@@ -12,12 +12,14 @@ import { fetchJson, fetchTexte, fetchBinaire, estErreur, estInchange } from '../
 import { unzip } from '../util/zip.js';
 import { readLayer } from '../util/shapefile.js';
 import { ringCentroid } from '../engine/geo.js';
+import { lireAtcf } from '../engine/invests.js';
 
 const BASE = 'https://www.nhc.noaa.gov';
 export const URLS = {
   currentStorms: `${BASE}/CurrentStorms.json`,
   twoAtlantiqueXml: `${BASE}/xml/TWOAT.xml`,
   gtwoShapefiles: `${BASE}/xgtwo/gtwo_shapefiles.zip`,
+  atcfBtk: 'https://ftp.nhc.noaa.gov/atcf/btk/',
   pageTwo: `${BASE}/gtwo.php?basin=atlc`,
 };
 
@@ -233,6 +235,13 @@ const CLASSIFICATIONS = {
   LO: { statut: 'Basse pression', code: 'basse_pression' },
 };
 
+/** URL absolue d'un zip GIS, que le NHC la donne complète ou relative. */
+function absolue(zip) {
+  if (!zip) return null;
+  if (/^https?:\/\//i.test(zip)) return zip;
+  return `${BASE}/${zip}`.replace('//storm', '/storm');
+}
+
 /** Systèmes actifs officiellement suivis par le NHC (bassin atlantique). */
 export async function fetchSystemesActifs() {
   const reponse = await fetchJson(URLS.currentStorms);
@@ -268,8 +277,10 @@ export async function fetchSystemesActifs() {
         misAJourLe: s.lastUpdate ? new Date(s.lastUpdate).toISOString() : null,
         liens: {
           avisPublic: s.publicAdvisory?.url || null,
-          cone: s.forecastCone?.zipFile ? `${BASE}/${s.forecastCone.zipFile}`.replace('//storm', '/storm') : null,
-          trajectoire: s.forecastTrack?.zipFile ? `${BASE}/${s.forecastTrack.zipFile}`.replace('//storm', '/storm') : null,
+          // Le champ s'appelle `trackCone` dans CurrentStorms.json ; l'archive
+          // « 5day » qu'il désigne contient à la fois le cône et la ligne prévue.
+          cone: absolue(s.trackCone?.zipFile) || absolue(s.forecastCone?.zipFile) || absolue(s.forecastTrack?.zipFile),
+          trajectoire: absolue(s.forecastTrack?.zipFile),
         },
       };
     });
@@ -308,37 +319,65 @@ export async function fetchConeOfficiel(urlZip) {
     return null;
   }
 
-  const nomShp = [...fichiers.keys()].find((n) => /\.shp$/i.test(n));
-  if (!nomShp) return null;
+  // L'archive « 5day » du NHC réunit trois couches : le cône (`_pgn`), la
+  // ligne prévue (`_lin`) et les points d'échéance (`_pts`). Prendre le premier
+  // shapefile venu tombait sur la ligne, et le cône n'était jamais lu.
+  const noms = [...fichiers.keys()].filter((n) => /\.shp$/i.test(n));
+  const nomPgn = noms.find((n) => /_pgn\.shp$/i.test(n)) || noms.find((n) => /cone/i.test(n)) || noms[0];
+  const nomPts = noms.find((n) => /_pts\.shp$/i.test(n));
+  if (!nomPgn) return null;
 
-  const couche = readLayer(fichiers.get(nomShp), fichiers.get(nomShp.replace(/\.shp$/i, '.dbf')));
-  const polygones = couche
-    .filter((f) => f.geometry.type === 'Polygon' && f.geometry.rings?.length)
+  const lire = (nom) => readLayer(fichiers.get(nom), fichiers.get(nom.replace(/\.shp$/i, '.dbf')));
+  const cone = coneDepuisCouches(lire(nomPgn), nomPts && nomPts !== nomPgn ? lire(nomPts) : []);
+  if (!cone) return null;
+  return { ...cone, source: 'NHC', officiel: true, recuLe: reponse.recuLe, sha256: reponse.sha256 };
+}
+
+/**
+ * Logique pure du cône : polygones de la couche `_pgn`, points d'échéance de
+ * la couche `_pts` (échéance, vent, stade de développement). Retourne `null`
+ * si rien n'est exploitable. Exportée pour être testée sans réseau.
+ */
+export function coneDepuisCouches(couchePgn, couchePts = []) {
+  const polygones = (couchePgn || [])
+    .filter((f) => f.geometry?.type === 'Polygon' && f.geometry.rings?.length)
     .map((f) => f.geometry.rings[0].map((p) => [
       Math.round(p.lon * 1000) / 1000,
       Math.round(p.lat * 1000) / 1000,
     ]));
 
-  const pointsPrevus = couche
-    .filter((f) => f.geometry.type === 'Point' && f.geometry.coordinates)
-    .map((f) => ({
-      lat: f.geometry.coordinates.lat,
-      lon: f.geometry.coordinates.lon,
-      echeance: f.properties.FLDATELBL || f.properties.TAU || null,
-      intensiteKt: f.properties.MAXWIND ?? null,
-      typeDev: f.properties.DVLBL || f.properties.TCDVLP || null,
-    }));
+  const pointsPrevus = [...(couchePgn || []), ...(couchePts || [])]
+    .filter((f) => f.geometry?.type === 'Point' && f.geometry.coordinates)
+    .map((f) => {
+      const tau = Number(f.properties?.TAU);
+      const vent = Number(f.properties?.MAXWIND);
+      return {
+        lat: f.geometry.coordinates.lat,
+        lon: f.geometry.coordinates.lon,
+        echeanceH: Number.isFinite(tau) ? tau : null,
+        echeance: f.properties?.FLDATELBL || f.properties?.TAU || null,
+        intensiteKt: Number.isFinite(vent) ? vent : null,
+        intensiteKmh: Number.isFinite(vent) ? Math.round(vent * 1.852) : null,
+        typeDev: f.properties?.DVLBL || f.properties?.TCDVLP || null,
+        stade: STADES_PREVUS[f.properties?.DVLBL || f.properties?.TCDVLP] || null,
+      };
+    })
+    .sort((a, b) => (a.echeanceH ?? 0) - (b.echeanceH ?? 0));
 
   if (!polygones.length && !pointsPrevus.length) return null;
-  return {
-    polygones,
-    pointsPrevus,
-    source: 'NHC',
-    officiel: true,
-    recuLe: reponse.recuLe,
-    sha256: reponse.sha256,
-  };
+  return { polygones, pointsPrevus };
 }
+
+/** Stade de développement prévu, code NHC → français. */
+const STADES_PREVUS = {
+  D: 'Dépression tropicale',
+  S: 'Tempête tropicale',
+  H: 'Ouragan',
+  M: 'Ouragan majeur',
+  L: 'Basse pression',
+  X: 'Post-tropical',
+  E: 'Extratropical',
+};
 
 /**
  * Trajectoire prévue d'un système nommé : la polyligne officielle du NHC.
@@ -385,16 +424,62 @@ export function trajectoireDepuisCouche(couche) {
   return points.length >= 2 ? points : null;
 }
 
+/** Dernier relevé lu par fichier ATCF : réutilisé quand le serveur répond 304. */
+const investsConnus = new Map();
+
+/**
+ * Numéros d'investigation (Invest 90L à 99L) de l'année en cours, d'après les
+ * fichiers ATCF de meilleure trajectoire du NHC. Le répertoire est petit et
+ * chaque fichier porte un ETag : un passage sans changement ne coûte rien.
+ * Retourne `null` si le répertoire est injoignable, sinon la liste des
+ * derniers relevés (éventuellement vide).
+ */
+export async function fetchInvests(annee = new Date().getUTCFullYear()) {
+  const listing = await fetchTexte(URLS.atcfBtk);
+  if (estErreur(listing)) return { ok: false, invests: null, erreur: listing.__error };
+  let fichiers;
+  if (estInchange(listing)) {
+    fichiers = [...investsConnus.keys()];
+  } else {
+    const motif = new RegExp(`bal9\\d${annee}\\.dat`, 'g');
+    fichiers = [...new Set(listing.corps.match(motif) || [])];
+    for (const connu of investsConnus.keys()) if (!fichiers.includes(connu)) investsConnus.delete(connu);
+  }
+
+  const erreurs = [];
+  await Promise.all(fichiers.map(async (f) => {
+    const r = await fetchTexte(URLS.atcfBtk + f);
+    if (estErreur(r)) { erreurs.push(`${f} : ${r.__error}`); return; }
+    if (estInchange(r)) return;
+    const fixe = lireAtcf(r.corps);
+    if (fixe) investsConnus.set(f, fixe); else investsConnus.delete(f);
+  }));
+
+  return {
+    ok: true,
+    invests: [...investsConnus.values()],
+    erreurs,
+    tracabilite: {
+      source: 'NHC',
+      produit: 'Numéros d\'investigation (ATCF best track)',
+      url: URLS.atcfBtk,
+      recuLe: listing.recuLe || new Date().toISOString(),
+      fichiers: fichiers.length,
+    },
+  };
+}
+
 /**
  * Collecte complète NHC.
  * Aucune exception ne remonte : le rapport dit ce qui a échoué et ce qui n'a
  * pas changé depuis la dernière fois.
  */
 export async function collecterNhc() {
-  const [zones, texte, actifs] = await Promise.all([
+  const [zones, texte, actifs, invests] = await Promise.all([
     fetchOutlookZones(),
     fetchOutlookTexte(),
     fetchSystemesActifs(),
+    fetchInvests().catch((e) => ({ ok: false, invests: null, erreur: e.message })),
   ]);
 
   const systemes = actifs.ok && !actifs.inchange ? actifs.systemes : null;
@@ -418,14 +503,17 @@ export async function collecterNhc() {
     zonesInchangees: !!zones.inchange,
     systemes,
     systemesInchanges: !!actifs.inchange,
+    invests: invests.ok ? invests.invests : null,
     outlookTexte: texte.ok && !texte.inchange ? texte : null,
     outlookInchange: !!texte.inchange,
     emisLe: zones.emisLe || texte.emisLe || null,
-    tracabilite: [zones.tracabilite, texte.tracabilite, actifs.tracabilite].filter(Boolean),
+    tracabilite: [zones.tracabilite, texte.tracabilite, actifs.tracabilite, invests.tracabilite].filter(Boolean),
     erreurs: [
       !zones.ok && `zones TWO : ${zones.erreur}`,
       !texte.ok && `texte TWO : ${texte.erreur}`,
       !actifs.ok && `systèmes actifs : ${actifs.erreur}`,
+      !invests.ok && `invests ATCF : ${invests.erreur}`,
+      ...(invests.erreurs || []).map((e) => `invest ATCF ${e}`),
     ].filter(Boolean),
   };
 }

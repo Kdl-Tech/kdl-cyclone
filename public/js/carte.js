@@ -178,6 +178,7 @@
       if (this.calques.trajectoires) this.etat.systemes.forEach(function (s) { self._dessinerTrajectoire(s); });
       if (this.calques.corridors) this.etat.systemes.forEach(function (s) { self._dessinerCorridor(s); });
       if (this.calques.trajectoires) this.etat.systemes.forEach(function (s) { self._dessinerDirection(s); });
+      if (this.calques.cones) this.etat.systemes.forEach(function (s) { self._dessinerPointsPrevus(s); });
       this.etat.systemes.forEach(function (s) { self._dessinerMarqueur(s); });
     }
 
@@ -325,6 +326,39 @@
       ctx.lineWidth = 1.8;
       ctx.stroke();
       ctx.globalAlpha = 1;
+    });
+  };
+
+  /**
+   * Points d'échéance du NHC le long de la trajectoire prévue : un disque par
+   * pas de prévision, plus gros au stade ouragan, avec l'heure d'échéance.
+   */
+  Carte.prototype._dessinerPointsPrevus = function (s) {
+    var pts = s.coneOfficiel && s.coneOfficiel.pointsPrevus;
+    if (!pts || !pts.length) return;
+    var ctx = this.ctx;
+    var couleur = this._couleurSysteme(s);
+    var self = this;
+    ctx.font = '650 10px ' + this._css('--police');
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    pts.forEach(function (pt) {
+      if (!pt.echeanceH) return; // le point 0 h est le marqueur lui-même
+      var p = self.versEcran(pt.lat, pt.lon);
+      var r = pt.typeDev === 'H' || pt.typeDev === 'M' ? 4.5 : 3.2;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+      ctx.fillStyle = couleur;
+      ctx.fill();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+      if (pt.echeanceH % 24 === 0) {
+        ctx.fillStyle = CARTE.encre;
+        ctx.globalAlpha = 0.85;
+        ctx.fillText('+' + pt.echeanceH + ' h', p.x, p.y + r + 2);
+        ctx.globalAlpha = 1;
+      }
     });
   };
 
@@ -572,7 +606,9 @@
     // et le sens de déplacement suit dès qu'il est connu.
     var etiquette = nomme
       ? (STATUTS_COURTS[s.statutCode] || s.statut || '') + ' ' + s.nom
-      : (s.designation || '').replace('Zone surveillée ', 'Zone ');
+      : s.invest && s.invest.numero
+        ? 'Invest ' + s.invest.numero
+        : (s.designation || '').replace('Zone surveillée ', 'Zone ');
     if (s.mouvement && s.mouvement.directionFr) etiquette += ' \u2192 ' + s.mouvement.directionFr;
     etiquette = etiquette.trim();
     var largeur = ctx.measureText(etiquette).width + 10;

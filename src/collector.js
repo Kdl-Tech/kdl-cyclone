@@ -17,6 +17,7 @@ import { analysePotential } from './engine/potential.js';
 import { evaluateThreat, risqueGlobal, ilesConcernees } from './engine/threat.js';
 import { distanceKm } from './engine/geo.js';
 import { choisirMouvement } from './engine/mouvement.js';
+import { associerInvests } from './engine/invests.js';
 import { etat as storeEtat, bulletins as storeBulletins, historique, evolution } from './store.js';
 import { rafraichirCartes } from './social.js';
 import { rafraichirBoucle, SECTEURS, CANAUX } from './sources/satellite.js';
@@ -39,7 +40,7 @@ const SOURCES = [
     nom: 'National Hurricane Center (NOAA)',
     url: 'https://www.nhc.noaa.gov/',
     licence: 'Domaine public (gouvernement des États-Unis)',
-    role: 'Avis officiels, zones surveillées, cônes de prévision',
+    role: 'Avis officiels, zones surveillées, numéros d\'investigation, cônes de prévision',
   },
   {
     cle: 'openmeteo',
@@ -120,9 +121,18 @@ export async function collecter() {
       risque48h: s.risque48hOfficiel, risque7j: s.risque7jOfficiel,
       polygone: s.polygone, position: s.position,
       trajectoireIndicative: s.trajectoireOfficielle,
+      invest: s.invest, identifiantNhc: s.identifiantNhc,
     })),
     nhc.zonesInchangees,
   );
+
+  // Numéros d'investigation : rattachés aux zones à chaque passage. Si les
+  // fichiers ATCF sont injoignables, on garde les rattachements précédents.
+  if (Array.isArray(nhc.invests)) {
+    associerInvests(zonesBrutes, nhc.invests);
+  } else {
+    degradations.push('invests ATCF indisponibles : numéros précédents conservés');
+  }
 
   const systemesBruts = reutiliser(
     nhc.systemes,
@@ -549,6 +559,7 @@ async function analyserSysteme(brut, serieHistorique, degradations) {
     nom: brut.nom || null,
     identifiantNhc: brut.identifiantNhc || null,
     numero: brut.numero || null,
+    invest: brut.invest || null,
     officiel: true,
     type: brut.type,
     statut: brut.statut || 'Zone surveillée par le NHC',

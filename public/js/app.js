@@ -674,11 +674,31 @@
       + (s.mouvement.speedKmh ? ' à ' + s.mouvement.speedKmh + ' km/h' : ' (sens publié par le NHC, vitesse non publiée)');
   }
 
+  /**
+   * Échéances de la prévision officielle : heure, stade prévu, vent. C'est la
+   * lecture du cône en chiffres, pour qui ne peut pas lire la carte.
+   */
+  function tableauPrevisionOfficielle(pts) {
+    var utiles = (pts || []).filter(function (p) { return p.echeanceH != null && p.intensiteKmh; });
+    if (!utiles.length) return '';
+    var lignes = utiles.map(function (p) {
+      var quand = p.echeanceH === 0 ? 'Maintenant' : '+' + p.echeanceH + ' h';
+      return '<tr><td>' + quand + '</td><td>' + echapper(p.stade || p.typeDev || '—') + '</td>'
+        + '<td class="chiffres">' + p.intensiteKmh + ' km/h</td></tr>';
+    }).join('');
+    return '<div style="margin-top:var(--e3);overflow-x:auto">'
+      + '<h4 style="font-size:.95rem;margin-bottom:var(--e2)">Prévision officielle du NHC, le long de la trajectoire</h4>'
+      + '<table class="tableau-compact"><thead><tr><th>Échéance</th><th>Stade prévu</th><th>Vent maximal</th></tr></thead>'
+      + '<tbody>' + lignes + '</tbody></table></div>';
+  }
+
   /** Statut officiel devant le prénom : « Tempête tropicale Erin », jamais « Erin » seul. */
   function nomComplet(s) {
     if (!s) return '';
-    if (!s.nom) return s.designation || '';
-    return (s.statut ? s.statut + ' ' : '') + s.nom;
+    if (s.nom) return (s.statut ? s.statut + ' ' : '') + s.nom;
+    // Le numéro d'investigation est le premier « nom » officiel d'une zone.
+    if (s.invest && s.invest.numero) return 'Invest ' + s.invest.numero + ' · zone ' + (s.numero || '');
+    return s.designation || '';
   }
 
   /**
@@ -913,6 +933,7 @@
       + '<div style="display:flex;flex-wrap:wrap;gap:var(--e2);margin-bottom:var(--e3)">'
       + '<span class="etiquette etiquette--officiel">Suivi officiel NHC</span>'
       + (s.nom ? '<span class="etiquette etiquette--officiel">' + echapper(s.statut) + '</span>' : '')
+      + (s.invest ? '<span class="etiquette etiquette--officiel">Invest ' + echapper(s.invest.numero) + '</span>' : '')
       + '</div>'
       + '<h2 style="font-size:1.7rem">' + echapper(nomComplet(s)) + '</h2>'
       + '<p style="color:var(--texte-doux);margin-top:var(--e2)">' + echapper(s.statut)
@@ -941,8 +962,13 @@
         : 'pas encore mesurable')
       + stat('Intensité', s.intensiteKmh
         ? '<span class="valeur">' + s.intensiteKmh + ' <small>km/h</small></span>'
-        : '<span class="etiquette etiquette--indispo">Sans objet</span>',
-      s.intensiteKmh ? 'vent maximal soutenu' : 'système non nommé')
+        : (s.invest && s.invest.ventKmh
+          ? '<span class="valeur">' + s.invest.ventKmh + ' <small>km/h</small></span>'
+          : '<span class="etiquette etiquette--indispo">Sans objet</span>'),
+      s.intensiteKmh ? 'vent maximal soutenu'
+        : (s.invest && s.invest.ventKmh
+          ? 'estimation NHC (ATCF) · ' + echapper(s.invest.typeFr || 'Invest ' + s.invest.numero)
+          : 'système non nommé'))
       + '</div></div>';
 
     // Probabilités officielles — toujours avant l'analyse KDL
@@ -1006,8 +1032,9 @@
       + '<div class="bandeau bandeau--info">' + ICONES.info + '<div>' + echapper(m.incertitude || '') + '</div></div>'
       + (s.coneOfficiel
         ? '<div class="bandeau bandeau--attention" style="margin-top:var(--e3)">' + ICONES.info
-          + '<div>Un cône de prévision officiel est publié par le NHC pour ce système. Il est affiché sur la carte en trait plein rouge. '
+          + '<div>Un cône de prévision officiel est publié par le NHC pour ce système. Il est affiché sur la carte en trait plein. '
           + 'Le corridor KDL, en pointillés, ne le remplace pas.</div></div>'
+          + tableauPrevisionOfficielle(s.coneOfficiel.pointsPrevus)
         : '')
       + (s.ilesProches && s.ilesProches.length
         ? '<p style="margin-top:var(--e4);font-size:.92rem;color:var(--texte-doux)">Îles situées à moins de 250 km du corridor indicatif : '

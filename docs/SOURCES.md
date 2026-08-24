@@ -49,7 +49,8 @@ territoires change.
 | Systèmes actifs | `/CurrentStorms.json` | 200 |
 | Tropical Weather Outlook (texte) | `/xml/TWOAT.xml` | 200 |
 | Zones, points et lignes du TWO | `/xgtwo/gtwo_shapefiles.zip` | 200 |
-| Cône et trajectoire d'un système nommé | URL fournie par `CurrentStorms.json` | dépend du système |
+| Cône, trajectoire et points d'échéance d'un système nommé | archive `5day` désignée par `trackCone` / `forecastTrack` de `CurrentStorms.json` (couches `_pgn`, `_lin`, `_pts`) | dépend du système |
+| Numéros d'investigation (Invest 90L-99L) | `https://ftp.nhc.noaa.gov/atcf/btk/bal9X{année}.dat` | 200, ETag |
 
 Les archives GIS sont des shapefiles ESRI. KDL Cyclone les lit avec un
 décompresseur ZIP et un lecteur de shapefile écrits pour le projet
@@ -57,6 +58,13 @@ décompresseur ZIP et un lecteur de shapefile écrits pour le projet
 
 Attributs exploités des zones : `AREA`, `PROB2DAY`, `RISK2DAY`, `PROB7DAY`,
 `RISK7DAY`, `BASIN`.
+
+Le bulletin TWO ne porte pas les numéros d'investigation. Ils sont lus dans les
+fichiers ATCF de meilleure trajectoire (format texte, une ligne par relevé :
+bassin, numéro, date, position, vent, pression, type). Un Invest est rattaché
+à la zone du bulletin dont le polygone contient son dernier relevé, ou à la
+zone la plus proche à moins de 600 km ; un relevé de plus de 36 h est ignoré
+(`src/engine/invests.js`).
 
 ### Règle d'usage
 

@@ -2894,3 +2894,9 @@ body.chercheur-ouvert { overflow: hidden; }
   .chercheur { transition: none; }
   .chercheur:active { transform: none; }
 }
+
+/* Tableau compact des échéances de la prévision officielle (fiche système). */
+.tableau-compact { width: 100%; border-collapse: collapse; font-size: .92rem; }
+.tableau-compact th, .tableau-compact td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--bordure, rgba(128,128,128,.25)); }
+.tableau-compact th { font-weight: 650; color: var(--texte-doux); font-size: .82rem; }
+.tableau-compact td:last-child, .tableau-compact th:last-child { text-align: right; }
