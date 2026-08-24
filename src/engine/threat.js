@@ -7,6 +7,7 @@
 
 import { distanceKm, destination, distanceToTrackKm, compassFr } from './geo.js';
 import { GUADELOUPE, LESSER_ANTILLES_ARC } from '../config.js';
+import { versFr } from './mouvement.js';
 
 /**
  * Rayon d'incertitude de position, en kilomètres, par échéance.
@@ -211,6 +212,11 @@ export function evaluateThreat(systeme, cible = GUADELOUPE) {
     if (parCode(niveau).ordre < 2) niveau = 'surveillance';
   }
 
+  // Direction connue sans vitesse : le sens est officiel, l'échéance non.
+  const directionSeule = !corridor && mouvement && Number.isFinite(mouvement.bearingDeg)
+    ? { directionFr: compassFr(mouvement.bearingDeg), versFr: versFr(compassFr(mouvement.bearingDeg)) }
+    : null;
+
   const n = parCode(niveau);
   return {
     niveau: n.code,
@@ -222,10 +228,10 @@ export function evaluateThreat(systeme, cible = GUADELOUPE) {
     approche,
     corridor,
     fenetre: fenetreFr(approche),
-    incertitude: incertitudeFr(approche, tendance),
+    incertitude: incertitudeFr(approche, tendance, directionSeule),
     message: messageFr({
       n, distanceActuelle, approche, statut, tendance, intensiteConnue,
-      sansCorridor: !corridor, probOfficielle, enAmont,
+      sansCorridor: !corridor, probOfficielle, enAmont, directionSeule,
       // Sans ce nom, le message annoncerait « de la Guadeloupe » en affichant
       // la distance d'un autre territoire.
       nomCible: cible.articleDe ? cible.articleDe + cible.nom : 'de la Guadeloupe',
@@ -246,8 +252,13 @@ function fenetreFr(approche) {
   return `Passage au plus près estimé dans environ ${jours} jour${jours > 1 ? 's' : ''} (± 1 jour).`;
 }
 
-function incertitudeFr(approche, tendance) {
+function incertitudeFr(approche, tendance, directionSeule) {
   if (!approche) {
+    if (directionSeule) {
+      return `Le NHC indique un déplacement ${directionSeule.versFr}, sans vitesse publiée : `
+        + "on connaît le sens, pas l'échéance. Aucun corridor n'est tracé tant que la vitesse "
+        + "manque, et aucune trajectoire n'est inventée.";
+    }
     return "Le déplacement du système n'est pas encore assez net pour tracer un corridor, "
       + "et aucune trajectoire n'est inventée tant que la donnée manque. "
       + "Cela ne veut pas dire que le système est sans danger : cela veut dire "
@@ -262,7 +273,7 @@ function incertitudeFr(approche, tendance) {
 
 function messageFr({
   n, distanceActuelle, approche, statut, tendance, intensiteConnue,
-  sansCorridor, probOfficielle, enAmont, nomCible,
+  sansCorridor, probOfficielle, enAmont, nomCible, directionSeule,
 }) {
   const quoi = statut || 'Le système';
   const dist = `${distanceActuelle.toLocaleString('fr-FR')} km`;
@@ -273,13 +284,17 @@ function messageFr({
   if (sansCorridor && enAmont && probOfficielle !== null) {
     const route = "Les systèmes de ce secteur se déplacent généralement vers l'ouest, "
       + "donc en direction de l'arc antillais.";
+    // Le sens publié par le NHC prime sur la règle générale du secteur.
+    const deplacement = directionSeule
+      ? `Le NHC attend un déplacement ${directionSeule.versFr}, sans vitesse publiée.`
+      : "Son déplacement n'est pas encore mesurable.";
     if (n.code === 'aucun') {
       return `${quoi} est à ${dist} ${cibleNom}. Le NHC lui donne ${probOfficielle} % de chances `
-        + `de se former dans les sept prochains jours. Son déplacement n'est pas encore mesurable. ${route}`;
+        + `de se former dans les sept prochains jours. ${deplacement} ${directionSeule ? '' : route}`.trim();
     }
     return `${quoi} est à ${dist} ${cibleNom}, avec ${probOfficielle} % de chances de formation `
-      + `à sept jours selon le NHC. Son déplacement n'est pas encore mesurable, il est donc suivi `
-      + `par prudence. ${route}`;
+      + `à sept jours selon le NHC. ${deplacement} ${directionSeule ? 'Il est suivi de près' : 'Il est donc suivi par prudence'}. `
+      + `${directionSeule ? '' : route}`.trim();
   }
 
   if (n.code === 'aucun') {

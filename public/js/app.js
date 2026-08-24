@@ -661,10 +661,24 @@
     })[0];
   }
 
+  /** « vers l'ouest », « vers le nord » : l'élision suit la voyelle. */
+  function versDirection(m) {
+    if (!m || !m.directionFr) return '';
+    if (m.versFr) return m.versFr;
+    return (/^[aeiouy]/i.test(m.directionFr) ? "vers l'" : 'vers le ') + m.directionFr;
+  }
+
   function libelleTendance(s) {
     if (!s || !s.mouvement) return 'pas encore mesurable';
-    return 'vers le ' + s.mouvement.directionFr
-      + (s.mouvement.speedKmh ? ' à ' + s.mouvement.speedKmh + ' km/h' : '');
+    return versDirection(s.mouvement)
+      + (s.mouvement.speedKmh ? ' à ' + s.mouvement.speedKmh + ' km/h' : ' (sens publié par le NHC, vitesse non publiée)');
+  }
+
+  /** Statut officiel devant le prénom : « Tempête tropicale Erin », jamais « Erin » seul. */
+  function nomComplet(s) {
+    if (!s) return '';
+    if (!s.nom) return s.designation || '';
+    return (s.statut ? s.statut + ' ' : '') + s.nom;
   }
 
   /**
@@ -823,7 +837,10 @@
       var meta = [];
       meta.push('<span><b>' + nombre(distancePour(s)) + ' km</b> de ' + echapper(terrNom) + '</span>');
       if (s.statut) meta.push('<span>' + echapper(s.statut) + '</span>');
-      if (s.mouvement) meta.push('<span>vers le ' + echapper(s.mouvement.directionFr) + ' à <b>' + s.mouvement.speedKmh + ' km/h</b></span>');
+      if (s.mouvement) {
+        meta.push('<span>' + echapper(versDirection(s.mouvement))
+          + (s.mouvement.speedKmh ? ' à <b>' + s.mouvement.speedKmh + ' km/h</b>' : ' <small>(sens NHC)</small>') + '</span>');
+      }
       if (s.intensiteKmh) meta.push('<span>vent <b>' + s.intensiteKmh + ' km/h</b></span>');
 
       return '<button class="systeme systeme--n' + cran + '" type="button"'
@@ -837,7 +854,7 @@
         + '<div class="systeme__prob-note">NHC · 7 j</div>'
         + '</div>'
         + '<div class="systeme__corps">'
-        + '<div class="systeme__nom">' + echapper(s.nom || s.designation) + '</div>'
+        + '<div class="systeme__nom">' + echapper(nomComplet(s)) + '</div>'
         + '<div class="systeme__meta">' + meta.join('') + '</div>'
         // Estimation maison : une barre hachurée, jamais un grand chiffre.
         + '<div class="systeme__kdl">'
@@ -897,8 +914,9 @@
       + '<span class="etiquette etiquette--officiel">Suivi officiel NHC</span>'
       + (s.nom ? '<span class="etiquette etiquette--officiel">' + echapper(s.statut) + '</span>' : '')
       + '</div>'
-      + '<h2 style="font-size:1.7rem">' + echapper(s.nom || s.designation) + '</h2>'
-      + '<p style="color:var(--texte-doux);margin-top:var(--e2)">' + echapper(s.statut) + '</p>'
+      + '<h2 style="font-size:1.7rem">' + echapper(nomComplet(s)) + '</h2>'
+      + '<p style="color:var(--texte-doux);margin-top:var(--e2)">' + echapper(s.statut)
+      + (s.mouvement ? ' · se déplace ' + echapper(versDirection(s.mouvement)) : '') + '</p>'
       + '<p style="margin-top:var(--e4);font-size:1.02rem">' + echapper(m.message || '') + '</p>'
       + '<p style="color:var(--texte-faible);font-size:.82rem;margin-top:var(--e3)">'
       + 'Identifiant stable : <code>' + echapper(s.id) + '</code></p>'
@@ -913,9 +931,14 @@
         ? '<span class="valeur">' + s.position.lat.toFixed(1) + '° N / ' + Math.abs(s.position.lon).toFixed(1) + '° O</span>'
         : '<span class="etiquette etiquette--indispo">Non disponible</span>', 'coordonnées officielles')
       + stat('Déplacement', s.mouvement
-        ? '<span class="valeur">' + s.mouvement.speedKmh + ' <small>km/h</small></span>'
+        ? (s.mouvement.speedKmh
+          ? '<span class="valeur">' + s.mouvement.speedKmh + ' <small>km/h</small></span>'
+          : '<span class="valeur" style="font-size:1.15rem">' + echapper(versDirection(s.mouvement)) + '</span>')
         : '<span class="etiquette etiquette--indispo">Non disponible</span>',
-      s.mouvement ? 'vers le ' + echapper(s.mouvement.directionFr) + ' — source : ' + echapper(s.mouvement.origine) : 'pas encore mesurable')
+      s.mouvement
+        ? (s.mouvement.speedKmh ? echapper(versDirection(s.mouvement)) + ' — ' : 'vitesse non publiée — ')
+          + 'source : ' + echapper(s.mouvement.origine)
+        : 'pas encore mesurable')
       + stat('Intensité', s.intensiteKmh
         ? '<span class="valeur">' + s.intensiteKmh + ' <small>km/h</small></span>'
         : '<span class="etiquette etiquette--indispo">Sans objet</span>',
@@ -2305,7 +2328,7 @@
     }
     var phrases = [];
     etat.systemes.slice(0, 2).forEach(function (s) {
-      var bout = (s.nom || s.designation) + ' se trouve à '
+      var bout = nomComplet(s) + ' se trouve à '
         + nombre(distancePour(s)) + ' km de ' + (territoireActif().article || '') + territoireActif().nom;
       var d = s.evolutions && s.evolutions.distance24h;
       if (d && Math.abs(d.delta) > 50) {
@@ -3158,10 +3181,11 @@
 
   function texteDePartage(s) {
     var lignes = [];
-    var nom = s.nom || s.designation;
-    lignes.push(nom + ' — ' + s.statut + '.');
+    var nom = nomComplet(s);
+    lignes.push(nom + (s.nom ? '' : ' — ' + s.statut) + '.');
     var terr = territoireActif();
     lignes.push('À ' + nombre(distancePour(s)) + ' km de ' + (terr.article || '') + terr.nom + '.');
+    if (s.mouvement) lignes.push('Déplacement ' + libelleTendance(s) + '.');
     if (typeof s.prob7j === 'number') {
       lignes.push('Risque de formation à 7 jours (NHC, officiel) : ' + s.prob7j + ' %.');
     }
@@ -3183,7 +3207,7 @@
   function partager(s) {
     var texte = window.KdlBeta.texteSysteme(s, etat, heureLocale);
     var url = location.origin + '/systemes/' + (s.slug || '');
-    ouvrirPartage('KDL Cyclone — ' + (s.nom || s.designation), texte, url);
+    ouvrirPartage('KDL Cyclone — ' + nomComplet(s), texte, url);
   }
 
   var minuteurSignal;
@@ -3470,8 +3494,9 @@
         bulle.dataset.visible = 'true';
         bulle.style.left = Math.min(p.x + 14, canvas.clientWidth - 250) + 'px';
         bulle.style.top = Math.max(p.y - 60, 8) + 'px';
-        bulle.innerHTML = '<b>' + echapper(s.nom || s.designation) + '</b>'
+        bulle.innerHTML = '<b>' + echapper(nomComplet(s)) + '</b>'
           + nombre(distancePour(s)) + ' km de ' + echapper((territoireActif().article || '') + territoireActif().nom) + '<br>'
+          + (s.mouvement ? 'Déplacement ' + echapper(libelleTendance(s)) + '<br>' : '')
           + (typeof s.prob7j === 'number' ? 'NHC 7 jours : ' + s.prob7j + ' %<br>' : '')
           + 'Potentiel KDL : ' + ((s.potentiel && s.potentiel.score) || '—') + '/100';
       },
@@ -3506,7 +3531,8 @@
       + '<span><i style="background:var(--ambre-vif)"></i>Préparation · 2 anneaux</span>'
       + '<span><i style="background:var(--rouge)"></i>Impact possible · 3 anneaux</span>'
       + '<span style="color:var(--texte-faible)">Trait plein = officiel NHC · '
-      + 'pointillés = corridor KDL indicatif · le pourcentage est la probabilité officielle à 7 jours</span>';
+      + 'pointillés = corridor KDL indicatif · la flèche donne le sens de déplacement connu · '
+      + 'le pourcentage est la probabilité officielle à 7 jours</span>';
 
     carte.chargerGeo().then(function () {
       if (etat) carte.definirEtat(etat);

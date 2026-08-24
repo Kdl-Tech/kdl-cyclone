@@ -177,6 +177,7 @@
       if (this.calques.cones) this.etat.systemes.forEach(function (s) { self._dessinerCone(s); });
       if (this.calques.trajectoires) this.etat.systemes.forEach(function (s) { self._dessinerTrajectoire(s); });
       if (this.calques.corridors) this.etat.systemes.forEach(function (s) { self._dessinerCorridor(s); });
+      if (this.calques.trajectoires) this.etat.systemes.forEach(function (s) { self._dessinerDirection(s); });
       this.etat.systemes.forEach(function (s) { self._dessinerMarqueur(s); });
     }
 
@@ -252,6 +253,17 @@
     ctx.setLineDash([2, 5]);
     ctx.stroke();
     ctx.setLineDash([]);
+  };
+
+  /** Statut officiel NHC, abrégé pour tenir sur une étiquette de carte. */
+  var STATUTS_COURTS = {
+    depression: 'Dépression trop.',
+    tempete: 'Tempête trop.',
+    ouragan: 'Ouragan',
+    ouragan_majeur: 'Ouragan majeur',
+    potentiel: 'Cyclone potentiel',
+    post_tropical: 'Post-tropical',
+    basse_pression: 'Basse pression',
   };
 
   Carte.prototype._couleurSysteme = function (s) {
@@ -330,6 +342,79 @@
     ctx.lineWidth = 2.2;
     ctx.lineCap = 'round';
     ctx.stroke();
+
+    // Une pointe au bout du trait : le sens de déplacement se lit d'un coup
+    // d'œil, sans avoir à retrouver le marqueur de départ.
+    var fin = this.versEcran(t[t.length - 1][1], t[t.length - 1][0]);
+    var avant = this._pointAvant(t, fin, 12);
+    if (avant) this._pointeFleche(avant, fin, this._couleurSysteme(s), 9);
+  };
+
+  /** Dernier point du tracé à plus de `minPx` de la fin : donne l'angle de la pointe. */
+  Carte.prototype._pointAvant = function (t, fin, minPx) {
+    for (var i = t.length - 2; i >= 0; i -= 1) {
+      var p = this.versEcran(t[i][1], t[i][0]);
+      if (Math.hypot(fin.x - p.x, fin.y - p.y) >= minPx) return p;
+    }
+    return null;
+  };
+
+  /** Pointe de flèche pleine, orientée de `de` vers `vers`. */
+  Carte.prototype._pointeFleche = function (de, vers, couleur, taille) {
+    var ctx = this.ctx;
+    var a = Math.atan2(vers.y - de.y, vers.x - de.x);
+    ctx.save();
+    ctx.translate(vers.x, vers.y);
+    ctx.rotate(a);
+    ctx.beginPath();
+    ctx.moveTo(2, 0);
+    ctx.lineTo(-taille, -taille * 0.6);
+    ctx.lineTo(-taille * 0.55, 0);
+    ctx.lineTo(-taille, taille * 0.6);
+    ctx.closePath();
+    ctx.fillStyle = couleur;
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.restore();
+  };
+
+  /**
+   * Sens de déplacement quand aucune ligne officielle n'est tracée : une courte
+   * flèche depuis le marqueur, dans le cap connu. Sa longueur est fixe à
+   * l'écran — elle dit une direction, jamais une distance ni une échéance.
+   */
+  Carte.prototype._dessinerDirection = function (s) {
+    var m = s.mouvement;
+    if (!s.position || !m || typeof m.bearingDeg !== 'number') return;
+    if (s.trajectoireOfficielle && s.trajectoireOfficielle.length >= 2) return;
+    var p = this.versEcran(s.position.lat, s.position.lon);
+    // Un pas d'un degré dans le cap, projeté, donne le vecteur écran du sens.
+    var cap = m.bearingDeg * Math.PI / 180;
+    var q = this.versEcran(
+      s.position.lat + Math.cos(cap),
+      s.position.lon + Math.sin(cap) / Math.max(0.2, Math.cos(s.position.lat * Math.PI / 180))
+    );
+    var dx = q.x - p.x; var dy = q.y - p.y;
+    var norme = Math.hypot(dx, dy);
+    if (norme < 1) return;
+    dx /= norme; dy /= norme;
+    var couleur = this._couleurSysteme(s);
+    var depart = { x: p.x + dx * 16, y: p.y + dy * 16 };
+    var fin = { x: p.x + dx * 52, y: p.y + dy * 52 };
+    var ctx = this.ctx;
+    ctx.save();
+    ctx.setLineDash(m.vitesseConnue ? [] : [5, 4]);
+    ctx.beginPath();
+    ctx.moveTo(depart.x, depart.y);
+    ctx.lineTo(fin.x, fin.y);
+    ctx.strokeStyle = couleur;
+    ctx.lineWidth = 2.4;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+    ctx.restore();
+    this._pointeFleche(depart, fin, couleur, 9);
   };
 
   /** Corridor KDL : pointillés + halo d'incertitude. Ce n'est pas un cône. */
@@ -482,7 +567,14 @@
     ctx.fillStyle = CARTE.encre;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    var etiquette = s.nom || (s.designation || '').replace('Zone surveillée ', 'Zone ');
+    // Le nom seul ne dit pas ce qu'est le système : une tempête tropicale et un
+    // ouragan portent tous deux un prénom. Le statut officiel s'écrit devant,
+    // et le sens de déplacement suit dès qu'il est connu.
+    var etiquette = nomme
+      ? (STATUTS_COURTS[s.statutCode] || s.statut || '') + ' ' + s.nom
+      : (s.designation || '').replace('Zone surveillée ', 'Zone ');
+    if (s.mouvement && s.mouvement.directionFr) etiquette += ' \u2192 ' + s.mouvement.directionFr;
+    etiquette = etiquette.trim();
     var largeur = ctx.measureText(etiquette).width + 10;
     var place = this._placerEtiquette(p.x + r + 4, p.y, largeur, 18);
 

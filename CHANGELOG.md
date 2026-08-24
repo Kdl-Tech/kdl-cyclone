@@ -4,6 +4,32 @@ Les dates sont celles du déploiement en production. La version installée est
 lisible sur [`/version.json`](https://cyclone.kdl-tech.fr/version.json) et dans
 la page À propos de l'application.
 
+## 0.17.0 — 24 août 2026
+
+**Chaque système affiche désormais le sens de son déplacement, et son nom est
+précédé de son statut officiel.** Jusqu'ici, une zone surveillée par le NHC
+était annoncée « déplacement pas encore mesurable » alors que le NHC publie,
+pour la plupart d'entre elles, la ligne de déplacement attendu ; et un système
+nommé s'affichait par son seul prénom, sans dire s'il s'agissait d'une tempête
+tropicale ou d'un ouragan.
+
+La direction vient, dans l'ordre : du déplacement publié par le NHC pour un
+système nommé ; sinon de sa ligne officielle (trajectoire prévue, ou
+déplacement attendu d'une zone du bulletin) ; sinon des positions enregistrées
+par KDL sur au moins six heures. Une direction sans vitesse reste une direction
+sans vitesse : aucun corridor n'est tracé, et le texte le dit.
+
+Sur la carte, chaque trajectoire officielle se termine par une pointe de
+flèche ; un système sans ligne officielle mais dont le sens est connu porte
+une courte flèche depuis son marqueur, en pointillés quand la vitesse est
+inconnue. L'étiquette devient « Ouragan Erin → ouest-nord-ouest » ou
+« Zone 2 → ouest ». La liste des systèmes, la fiche détaillée, l'infobulle et
+le texte de partage reprennent la même information. « Vers le ouest » est
+corrigé en « vers l'ouest ».
+
+Correctif : la trajectoire prévue d'un système nommé, chargée depuis la
+version 0.12.1, n'était pas transmise à l'application ; elle l'est.
+
 ## 0.16.0 — 21 août 2026
 
 **KDL Cyclone porte désormais sa propre identité légale.** L'application est un

@@ -15,7 +15,8 @@ import {
 } from './sources/openmeteo.js';
 import { analysePotential } from './engine/potential.js';
 import { evaluateThreat, risqueGlobal, ilesConcernees } from './engine/threat.js';
-import { distanceKm, compassFr } from './engine/geo.js';
+import { distanceKm } from './engine/geo.js';
+import { choisirMouvement } from './engine/mouvement.js';
 import { etat as storeEtat, bulletins as storeBulletins, historique, evolution } from './store.js';
 import { rafraichirCartes } from './social.js';
 import { rafraichirBoucle, SECTEURS, CANAUX } from './sources/satellite.js';
@@ -129,8 +130,12 @@ export async function collecter() {
       id: s.id, source: 'NHC', type: s.type, nom: s.nom,
       identifiantNhc: s.identifiantNhc, statut: s.statut, statutCode: s.statutCode,
       position: s.position, intensiteKmh: s.intensiteKmh, pressionHpa: s.pressionHpa,
-      mouvement: s.mouvement, misAJourLe: s.misAJourLe,
-      coneOfficiel: s.coneOfficiel, liens: {},
+      // Seul le déplacement publié par le NHC est repris tel quel : une
+      // direction déduite se recalcule à chaque passage.
+      mouvement: s.mouvement && s.mouvement.origine === 'NHC'
+        ? { bearingDeg: s.mouvement.bearingDeg, speedKmh: s.mouvement.speedKmh } : null,
+      misAJourLe: s.misAJourLe,
+      coneOfficiel: s.coneOfficiel, trajectoireOfficielle: s.trajectoireOfficielle, liens: {},
     })),
     nhc.systemesInchanges,
   );
@@ -510,8 +515,15 @@ async function analyserSysteme(brut, serieHistorique, degradations) {
     nhcProb7d: brut.prob7j ?? null,
   });
 
-  // Le mouvement vient du NHC s'il le publie, sinon de l'historique de position.
-  const mouvement = brut.mouvement || mouvementDepuisHistorique(serieHistorique);
+  // Le mouvement vient du NHC s'il le publie ; sinon de sa ligne officielle
+  // (trajectoire prévue ou déplacement attendu d'une zone) ; en dernier
+  // recours des positions enregistrées. Jamais d'une supposition.
+  const mouvement = choisirMouvement({
+    officiel: brut.mouvement,
+    trace: brut.trajectoireIndicative || brut.trajectoireOfficielle || null,
+    nomme: !!brut.nom,
+    historique: serieHistorique,
+  });
 
   const menace = evaluateThreat(
     {
@@ -543,13 +555,11 @@ async function analyserSysteme(brut, serieHistorique, degradations) {
     statutCode: brut.statutCode || 'zone',
     position,
     polygone: brut.polygone || null,
-    trajectoireOfficielle: brut.trajectoireIndicative || null,
+    trajectoireOfficielle: brut.trajectoireIndicative || brut.trajectoireOfficielle || null,
     coneOfficiel: brut.coneOfficiel || null,
     intensiteKmh: brut.intensiteKmh ?? null,
     pressionHpa: brut.pressionHpa ?? null,
-    mouvement: mouvement
-      ? { ...mouvement, directionFr: compassFr(mouvement.bearingDeg), origine: brut.mouvement ? 'NHC' : 'calculé par KDL' }
-      : null,
+    mouvement,
     prob48h: brut.prob48h ?? null,
     prob7j: brut.prob7j ?? null,
     risque48hOfficiel: brut.risque48h ?? null,
@@ -665,30 +675,6 @@ function surveiller(etatCourant, precedent) {
     controles,
     alertes,
     etat: alertes.length === 0 ? 'ok' : 'alerte',
-  };
-}
-
-/** Déduit le déplacement à partir des positions successives enregistrées. */
-function mouvementDepuisHistorique(serie) {
-  if (!Array.isArray(serie) || serie.length < 2) return null;
-  const recents = serie.filter((e) => Number.isFinite(e.lat) && Number.isFinite(e.lon)).slice(-6);
-  if (recents.length < 2) return null;
-
-  const a = recents[0];
-  const b = recents[recents.length - 1];
-  const heures = (new Date(b.t) - new Date(a.t)) / 3600000;
-  if (heures < 1) return null;
-
-  const d = distanceKm({ lat: a.lat, lon: a.lon }, { lat: b.lat, lon: b.lon });
-  if (d < 20) return null; // déplacement dans le bruit de la donnée
-
-  const dLon = b.lon - a.lon;
-  const dLat = b.lat - a.lat;
-  const bearing = (Math.atan2(dLon * Math.cos((((a.lat + b.lat) / 2) * Math.PI) / 180), dLat) * 180) / Math.PI;
-
-  return {
-    bearingDeg: (bearing + 360) % 360,
-    speedKmh: Math.round(d / heures),
   };
 }
 
