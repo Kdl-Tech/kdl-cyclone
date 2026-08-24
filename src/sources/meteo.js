@@ -99,13 +99,48 @@ export function niveauSeuil(type, valeur) {
   return atteint ? { ...atteint, valeur } : null;
 }
 
-function indiceProche(temps) {
+/**
+ * "2026-08-24T15:00" -> minutes, en lisant les chiffres tels qu'ils sont écrits.
+ * Aucune interprétation de fuseau : c'est justement ce qu'il faut éviter ici.
+ */
+function minutesEcrites(texte) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(String(texte || ''));
+  if (!m) return NaN;
+  return Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]) / 60000;
+}
+
+/** L'instant présent, écrit comme Open-Meteo l'écrirait dans ce fuseau. */
+function minutesMaintenant(fuseau) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: fuseau,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hour12: false,
+  }).formatToParts(new Date());
+  const p = {};
+  for (const { type, value } of parts) p[type] = value;
+  const heure = Number(p.hour) === 24 ? 0 : Number(p.hour); // minuit sort en "24" chez certains
+  return Date.UTC(+p.year, +p.month - 1, +p.day, heure, +p.minute) / 60000;
+}
+
+/**
+ * Index de l'heure la plus proche de maintenant.
+ *
+ * 🔴 Piège corrigé le 2026-08-24 : avec `timezone=America/Guadeloupe`, Open-Meteo
+ * renvoie des heures LOCALES mais **sans suffixe de fuseau** ("2026-08-24T15:00").
+ * `new Date(...)` les interprétait alors dans le fuseau du serveur — le VPS est en
+ * UTC — et la comparaison à `Date.now()` décalait le point de départ de 4 h :
+ * « Prochaines heures » démarrait à 19:00 alors qu'il était 15:00 en Guadeloupe.
+ * On compare donc les deux côtés dans le même référentiel : les chiffres écrits.
+ */
+export function indiceProche(temps, fuseau) {
   if (!Array.isArray(temps) || temps.length === 0) return 0;
-  const maintenant = Date.now();
+  const maintenant = fuseau ? minutesMaintenant(fuseau) : Date.now() / 60000;
   let best = 0;
   let ecart = Infinity;
   for (let i = 0; i < temps.length; i += 1) {
-    const d = Math.abs(new Date(temps[i]).getTime() - maintenant);
+    const valeur = minutesEcrites(temps[i]);
+    if (!Number.isFinite(valeur)) continue;
+    const d = Math.abs(valeur - maintenant);
     if (d < ecart) { ecart = d; best = i; }
   }
   return best;
@@ -140,7 +175,7 @@ export async function fetchBulletin(point, fuseau) {
   const cur = d.current || {};
   const h = d.hourly || {};
   const j = d.daily || {};
-  const iH = indiceProche(h.time);
+  const iH = indiceProche(h.time, fuseau);
 
   const estNuit = cur.is_day === 0;
   const description = decrireCode(cur.weather_code, estNuit);
@@ -178,7 +213,7 @@ export async function fetchBulletin(point, fuseau) {
   let qualiteAir = null;
   if (!estErreur(air)) {
     const ha = air.donnees.hourly || {};
-    const ia = indiceProche(ha.time);
+    const ia = indiceProche(ha.time, fuseau);
     qualiteAir = {
       pm10: ha.pm10?.[ia] ?? null,
       pm25: ha.pm2_5?.[ia] ?? null,
