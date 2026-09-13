@@ -76,3 +76,38 @@ Ne PAS simplement abaisser collectIntervalMs :
 - https://www.nhc.noaa.gov/gis/
 - https://www.nhc.noaa.gov/modelsummary.shtml
 - https://leafletjs.com/reference.html
+
+
+## Checkpoint — 13 septembre 2026, après déploiement 0.19.0
+
+- Production déployée : `https://cyclone.kdl-tech.fr`, version `0.19.0`.
+- Commit local MSI : `f11d923` sur `refonte/cyclone`.
+- Tests : 203/203 réussis avant déploiement.
+- Sauvegarde VPS : `/home/debian/backups/kdl-cyclone-pre-0.19.0.tgz`.
+- SHA-256 sauvegarde : `c0bd28d9c185fe9b5b0f4f8de7b1ca6ac9c2dd3d08f201ebb62e0039676ebf33`.
+- Retour Karim : nouveau visuel validé, mais les **sargasses ne sont pas visibles**.
+
+### Première tâche à la reprise
+
+1. Reproduire sur la production et tester `/api/sargasses`.
+2. Vérifier que « Sargasses » apparaît clairement dans le panneau Calques.
+3. Corriger le chargement/dessin ou rendre la commande directement visible.
+4. Tester mobile 390 px, carte Atlantique, date/source NOAA et absence de chevauchement.
+5. Relancer les tests, sauvegarder, déployer un correctif `0.19.1`, puis vérifier publiquement.
+
+Ne pas toucher au nouveau visuel validé ni revenir à l’ancienne version.
+
+## Checkpoint — 13 septembre 2026, version 0.19.1 prête localement
+
+- Production inchangée en `0.19.0` : aucun déploiement sans feu vert explicite.
+- Correctifs prêts sur `refonte/cyclone`, jusqu’au commit `df1fc97`.
+- Météo-France reste la source principale dès qu’une observation officielle fraîche existe ; Open-Meteo est affiché uniquement comme secours explicite.
+- Les sargasses NOAA sont chargées au premier affichage et représentées en bandes vert foncé datées.
+- La couche NOAA GOES-19 « brumes de sable » s’active réellement au premier clic, avec une palette sable/ocre et sans cartouche technique dans la carte.
+- Le chevauchement du premier écran est supprimé et contrôlé de 360 à 1 440 px, ainsi qu’au zoom 200 %.
+- Validation locale 0.19.1 : 213/213 tests, QA navigateur sans défaut, PWA 23/23, hors-ligne sans défaut, carte animée 23/23 à 50 i/s, grand écran 7/7.
+- Le secret Météo-France n’a été ni lu ni copié. L’état public 0.19.0 confirmait que la collecte Météo-France en production est opérationnelle.
+
+### Prochaine action
+
+Après feu vert de Karim : sauvegarde VPS vérifiée par SHA-256, déploiement 0.19.1, contrôle public des sources Météo-France/Open-Meteo, des deux calques environnementaux, de la version et du cache PWA, puis rollback immédiat au moindre défaut critique.

@@ -84,7 +84,7 @@ try {
   const manifeste = await (await fetch(`${BASE}/manifest.webmanifest`)).json();
 
   const attendus = {
-    name: 'KDL Cyclone — Veille Antilles',
+    name: 'KDL Cyclone — Veille Caraïbes',
     short_name: 'KDL Cyclone',
     display: 'standalone',
     start_url: '/',
