@@ -152,6 +152,37 @@ class Cdp {
 const constats = [];
 const noter = (gravite, message) => constats.push({ gravite, message });
 
+async function verifierAccueil(cdp, largeur, hauteur, mobile, zoom = 1) {
+  await cdp.ecran(largeur, hauteur, mobile);
+  await cdp.envoyer('Emulation.setPageScaleFactor', { pageScaleFactor: zoom });
+  await cdp.naviguer(BASE);
+  const mesure = await cdp.evaluer(`(() => {
+    const elements = [...document.querySelectorAll(
+      '.situation__eyebrow,.situation__etat,.situation__titre,.situation__detail,.cartouche,.situation__pied'
+    )].filter((e) => e.offsetParent !== null).map((e) => {
+      const r = e.getBoundingClientRect();
+      return { nom: e.className, gauche: r.left, droite: r.right, haut: r.top, bas: r.bottom };
+    });
+    const intersections = [];
+    elements.forEach((a, i) => elements.slice(i + 1).forEach((b) => {
+      const touche = a.gauche < b.droite && a.droite > b.gauche
+        && a.haut < b.bas && a.bas > b.haut;
+      if (touche) intersections.push(a.nom + ' / ' + b.nom);
+    }));
+    return {
+      intersections,
+      debordement: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    };
+  })()`);
+  if (mesure.intersections.length) {
+    noter('bloquant', `texte superposé à ${largeur}px zoom ${zoom} : ${mesure.intersections.join(', ')}`);
+  }
+  if (mesure.debordement > 1) {
+    noter('bloquant', `débordement accueil de ${mesure.debordement}px à ${largeur}px zoom ${zoom}`);
+  }
+  await cdp.envoyer('Emulation.setPageScaleFactor', { pageScaleFactor: 1 });
+}
+
 async function main() {
   fs.mkdirSync(SORTIE, { recursive: true });
   const profil = fs.mkdtempSync(path.join(os.tmpdir(), 'kdl-qa-'));
@@ -170,7 +201,17 @@ async function main() {
     await cdp.envoyer('Page.enable');
     await cdp.envoyer('Runtime.enable');
     await cdp.envoyer('Network.enable');
+    await cdp.envoyer('Network.setCacheDisabled', { cacheDisabled: true });
+    await cdp.envoyer('Network.setBypassServiceWorker', { bypass: true });
     await cdp.envoyer('Emulation.setTouchEmulationEnabled', { enabled: true });
+
+    for (const [largeur, hauteur, mobile] of [
+      [360, 760, true], [390, 844, true], [768, 1024, false],
+      [1280, 800, false], [1440, 940, false],
+    ]) {
+      await verifierAccueil(cdp, largeur, hauteur, mobile);
+    }
+    await verifierAccueil(cdp, 390, 844, true, 2);
 
     // ---------------------------------------------------- téléphone (Redmi)
     await cdp.ecran(393, 873, true);
@@ -224,6 +265,13 @@ async function main() {
     })()`);
     console.log('Nuances distinctes sur la carte :', carteDessinee);
     if (carteDessinee < 6) noter('bloquant', 'la carte semble vide ou uniforme');
+    await cdp.cliquer('#basculer-calques');
+    const infoSargasses = await cdp.evaluer(
+      "document.querySelector('[data-calque-info=\"sargasses\"]')?.textContent || ''",
+    );
+    if (!/NOAA SIR/.test(infoSargasses) || /chargement/i.test(infoSargasses)) {
+      noter('majeur', `source sargasses non confirmée dans les calques : « ${infoSargasses} »`);
+    }
     await cdp.capturer('04-mobile-carte-sombre.png', false);
 
     await cdp.cliquer('#bouton-theme');
@@ -289,7 +337,37 @@ async function main() {
     await cdp.capturer('11-bureau-accueil.png', false);
     await cdp.cliquer('.nav__lien[data-vue="carte"]');
     await attendre(1600);
+    const contrasteCalques = await cdp.evaluer(`(() => {
+      const luminosite = (selecteur) => {
+        const el = document.querySelector(selecteur);
+        if (!el) return 0;
+        const rgb = getComputedStyle(el).color.match(/\\d+(?:\\.\\d+)?/g) || [];
+        return rgb.slice(0, 3).reduce((s, n) => s + Number(n), 0) / 3;
+      };
+      return {
+        titre: luminosite('.calques input:checked ~ .calques__texte b'),
+        source: luminosite('.calques__texte small'),
+      };
+    })()`);
+    if (contrasteCalques.titre < 150 || contrasteCalques.source < 110) {
+      noter('bloquant', `contraste insuffisant dans le panneau des calques : ${JSON.stringify(contrasteCalques)}`);
+    }
     await cdp.capturer('12-bureau-carte.png', false);
+    await cdp.cliquer('[data-calque="sable"]');
+    const sableCharge = await cdp.evaluer(`new Promise((resolve) => {
+      const limite = Date.now() + 20000;
+      const verifier = () => {
+        const info = document.querySelector('[data-calque-info="sable"]')?.textContent || '';
+        if (!/à charger/i.test(info) || Date.now() >= limite) resolve(info);
+        else setTimeout(verifier, 250);
+      };
+      verifier();
+    })`);
+    if (!/NOAA GOES-19/.test(sableCharge) || /à charger/i.test(sableCharge)) {
+      noter('majeur', `couche sable non chargée : « ${sableCharge} »`);
+    }
+    await attendre(900);
+    await cdp.capturer('12b-bureau-carte-sable.png', false);
     await cdp.cliquer('#bouton-theme');
     await attendre(800);
     await cdp.capturer('13-bureau-carte-sombre.png', false);

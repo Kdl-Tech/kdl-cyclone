@@ -871,6 +871,22 @@ button { font: inherit; color: inherit; }
 .calques label { display: flex; align-items: center; gap: var(--e2); padding: 3px var(--e2); border-radius: var(--r-sm); cursor: pointer; }
 .calques label:hover { background: rgba(53, 208, 238, 0.16); }
 .calques input { accent-color: var(--cyan); width: 15px; height: 15px; }
+.calques__pastille {
+  width: 20px;
+  height: 10px;
+  flex: 0 0 auto;
+  border: 1px solid rgba(255, 255, 255, .5);
+  border-radius: 999px;
+  opacity: .74;
+  transition: opacity 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+.calques__pastille--sable { background: linear-gradient(90deg, #d6a62d, #f0cf74); }
+.calques__pastille--sargasses { background: repeating-linear-gradient(90deg, #123f2b 0 5px, #2f6b3c 5px 9px); }
+.calques__texte { display: grid; min-width: 0; line-height: 1.15; }
+.calques__texte b { color: #eef6fa; font-size: .82rem; font-weight: 720; }
+.calques__texte small { margin-top: 3px; color: rgba(226, 242, 249, .64); font-size: .66rem; }
+.calques input:checked + .calques__pastille { opacity: 1; transform: scale(1.08); box-shadow: 0 0 0 3px rgba(53, 208, 238, .12); }
+.calques input:checked ~ .calques__texte b { color: #fff; }
 
 .carte-infobulle {
   position: absolute;
@@ -3083,7 +3099,12 @@ body.chercheur-ouvert { overflow: hidden; }
 @media (min-width: 620px) {
   .entete { padding-left: max(var(--e5), calc((100vw - var(--largeur-max)) / 2)); padding-right: max(var(--e5), calc((100vw - var(--largeur-max)) / 2)); }
   .page { padding-top: var(--e8); }
-  .situation__eyebrow { grid-column: 1 / -1; margin-bottom: calc(-1 * var(--e4)); }
+  .situation__eyebrow { grid-column: 1 / -1; margin-bottom: var(--e3); }
+}
+
+.situation__titre, .situation__detail, .calques label {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 @media (prefers-contrast: more) {

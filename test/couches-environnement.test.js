@@ -7,6 +7,8 @@ import { CANAUX, SECTEURS } from '../src/sources/satellite.js';
 
 const satelliteClient = fs.readFileSync(new URL('../public/js/satellite.js', import.meta.url), 'utf8');
 const carteClient = fs.readFileSync(new URL('../public/js/carte.js', import.meta.url), 'utf8');
+const appClient = fs.readFileSync(new URL('../public/js/app.js', import.meta.url), 'utf8');
+const cssClient = fs.readFileSync(new URL('../public/css/app.css', import.meta.url), 'utf8');
 
 test('la couche NOAA agrège les segments côtiers sans publier les millions de points', () => {
   const kml = `<Placemark><SimpleData name="risk">3</SimpleData><SimpleData name="date">20260911</SimpleData><LineString><coordinates>-61.6,16.2 -61.5,16.3</coordinates></LineString></Placemark>
@@ -32,6 +34,16 @@ test('la brume de sable reçoit une palette jaune ocre dédiée', () => {
     contexte.window.KdlSatellite.filtrePalette('sable'),
     'sepia(1) saturate(1.55) hue-rotate(350deg) brightness(.96) contrast(1.08)',
   );
+  assert.equal(contexte.window.KdlSatellite.ratioImageUtile('sable'), 0.92);
+  assert.equal(contexte.window.KdlSatellite.ratioImageUtile(null), 1);
+});
+
+test('le premier chargement active réellement le calque sable', () => {
+  const debut = appClient.indexOf('  function chargerSable()');
+  const fin = appClient.indexOf('\n\n  function chargerSargasses()', debut);
+  const bloc = appClient.slice(debut, fin);
+  assert.match(bloc, /carte\.attacherBoucle\('sable', boucleSable\)/);
+  assert.match(bloc, /carte\.definirCalque\('sable', true\)/);
 });
 
 test('les sargasses restent dans une gamme vert foncé', () => {
@@ -42,4 +54,13 @@ test('les sargasses restent dans une gamme vert foncé', () => {
   assert.match(bloc, /#1f5935/);
   assert.match(bloc, /#123f2b/);
   assert.doesNotMatch(bloc, /#d2a13a|#e56f2f/);
+});
+
+test('les commandes distinguent sable et sargasses avec leur provenance', () => {
+  assert.match(appClient, /calques__pastille--sable/);
+  assert.match(appClient, /calques__pastille--sargasses/);
+  assert.match(appClient, /data-calque-info="sable"/);
+  assert.match(appClient, /data-calque-info="sargasses"/);
+  assert.match(cssClient, /\.calques__pastille--sable/);
+  assert.match(cssClient, /\.calques__pastille--sargasses/);
 });

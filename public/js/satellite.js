@@ -59,6 +59,11 @@
       : 'none';
   }
 
+  /** Écarte uniquement le cartouche technique sous les composites NOAA. */
+  function ratioImageUtile(nom) {
+    return nom === 'sable' ? 0.92 : 1;
+  }
+
   Boucle.prototype.chargerMeta = function () {
     var self = this;
     return fetch('/api/satellite?secteur=' + encodeURIComponent(this.secteur) + '&canal=' + encodeURIComponent(this.canal))
@@ -294,7 +299,15 @@
     // fusion additive, qui délavait l'ensemble en blanc.
     ctx.imageSmoothingQuality = 'high';
     try {
-      ctx.drawImage(image.element, hautGauche.x, hautGauche.y, largeur, hauteur);
+      var ratio = ratioImageUtile(this.palette);
+      if (ratio < 1) {
+        var sourceL = image.element.naturalWidth || image.element.width;
+        var sourceH = image.element.naturalHeight || image.element.height;
+        ctx.drawImage(image.element, 0, 0, sourceL, sourceH * ratio,
+          hautGauche.x, hautGauche.y, largeur, hauteur);
+      } else {
+        ctx.drawImage(image.element, hautGauche.x, hautGauche.y, largeur, hauteur);
+      }
     } catch (e) {
       ctx.restore();
       return false;
@@ -320,5 +333,6 @@
     detecterEconomie: detecterEconomie,
     mouvementReduit: mouvementReduit,
     filtrePalette: filtrePalette,
+    ratioImageUtile: ratioImageUtile,
   };
 })(window);

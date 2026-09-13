@@ -23,6 +23,7 @@ test('le premier chargement active réellement la couche sargasses', async () =>
       definirCalque: (nom, actif) => appels.push(`calque:${nom}:${actif}`),
     },
     document: { querySelector: () => null },
+    mettreAJourInfoCalque() {},
     signaler() {},
   };
 
@@ -50,6 +51,7 @@ test('un échec désactive la commande et la couche sargasses', async () => {
       definirCalque: (nom, actif) => appels.push([nom, actif]),
     },
     document: { querySelector: () => caseSargasses },
+    mettreAJourInfoCalque() {},
     signaler() {},
   };
 

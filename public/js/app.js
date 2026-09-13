@@ -2360,6 +2360,11 @@
   var boucleSable = null;
   var sargassesChargees = false;
 
+  function mettreAJourInfoCalque(nom, texte) {
+    var cible = document.querySelector('[data-calque-info="' + nom + '"]');
+    if (cible) cible.textContent = texte;
+  }
+
   function rendreControlesSatellite() {
     var zone = $('#satellite-controles');
     if (!zone) return;
@@ -2512,7 +2517,7 @@
     if (boucleSable) return Promise.resolve(true);
     signaler('Chargement des observations de brume de sable…');
     boucleSable = new window.KdlSatellite.Boucle({ secteur: 'atlantique', canal: 'dust', masque: false,
-      palette: 'sable', opacite: 0.72,
+      palette: 'sable', opacite: 0.54,
       surChangement: function () { if (carte) carte.dessiner(); } });
     return boucleSable.chargerMeta().then(function (meta) {
       if (!meta || !meta.images || !meta.images.length) throw new Error('indisponible');
@@ -2520,7 +2525,12 @@
     }).then(function (ok) {
       if (!ok) throw new Error('indisponible');
       carte.attacherBoucle('sable', boucleSable);
+      carte.definirCalque('sable', true);
       if (!window.KdlSatellite.mouvementReduit()) boucleSable.jouer();
+      var images = (boucleSable.meta && boucleSable.meta.images) || [];
+      var derniere = images[images.length - 1];
+      mettreAJourInfoCalque('sable', 'NOAA GOES-19'
+        + (derniere && derniere.instant ? ' · ' + heureLocale(derniere.instant, true) : ''));
       signaler('Brumes de sable NOAA affichées.');
       return true;
     }).catch(function () {
@@ -2540,6 +2550,7 @@
         carte.definirSargasses(donnees);
         carte.definirCalque('sargasses', true);
         sargassesChargees = true;
+        mettreAJourInfoCalque('sargasses', 'NOAA SIR · ' + (donnees.date || 'dernier relevé'));
         signaler('Sargasses NOAA du ' + (donnees.date || 'dernier relevé') + ' affichées.');
         return true;
       }).catch(function () {
@@ -3663,13 +3674,28 @@
       ['corridors', 'Corridors KDL', true],
       ['grille', 'Grille', true],
     ];
+
+    function libelleCalque(c) {
+      if (c[0] === 'sable') {
+        return '<span class="calques__pastille calques__pastille--sable" aria-hidden="true"></span>'
+          + '<span class="calques__texte"><b>' + c[1] + '</b>'
+          + '<small data-calque-info="sable">NOAA GOES-19 · à charger</small></span>';
+      }
+      if (c[0] === 'sargasses') {
+        return '<span class="calques__pastille calques__pastille--sargasses" aria-hidden="true"></span>'
+          + '<span class="calques__texte"><b>' + c[1] + '</b>'
+          + '<small data-calque-info="sargasses">NOAA SIR · chargement</small></span>';
+      }
+      return '<span class="calques__texte"><b>' + c[1] + '</b></span>';
+    }
     $('#calques').innerHTML =
       '<button class="calques__bascule" type="button" id="basculer-calques" aria-expanded="false">'
       + '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 4-6 3v13l6-3 6 3 6-3V4l-6 3z"/></svg>'
       + '<span>Calques</span></button>'
       + '<div class="calques__liste" id="calques-liste">'
       + calques.map(function (c) {
-        return '<label><input type="checkbox" data-calque="' + c[0] + '"' + (c[2] ? ' checked' : '') + '>' + c[1] + '</label>';
+        return '<label><input type="checkbox" data-calque="' + c[0] + '"' + (c[2] ? ' checked' : '') + '>'
+          + libelleCalque(c) + '</label>';
       }).join('')
       + '</div>';
 
@@ -3682,7 +3708,7 @@
       + '<span><i style="background:var(--ambre-vif)"></i>Préparation · 2 anneaux</span>'
       + '<span><i style="background:var(--rouge)"></i>Impact possible · 3 anneaux</span>'
       + '<span><i style="background:var(--d-sable)"></i>Sable · NOAA GOES-19</span>'
-      + '<span><i style="background:#b88a2e"></i>Sargasses · NOAA SIR</span>'
+      + '<span><i style="background:#1f5935"></i>Sargasses · NOAA SIR</span>'
       + '<span style="color:var(--texte-faible)">Trait plein = officiel NHC · '
       + 'pointillés = corridor KDL indicatif · la flèche donne le sens de déplacement connu · '
       + 'le pourcentage est la probabilité officielle à 7 jours</span>';
@@ -3692,8 +3718,8 @@
       else carte.dessiner();
     });
 
-    // L'invitation à charger la boucle s'affiche dès l'ouverture de la carte :
-    // rien n'est téléchargé tant que l'utilisateur ne l'a pas demandé.
+    // La boucle satellite lourde reste à la demande. Le relevé sargasses,
+    // léger, est chargé immédiatement pour que la couche ne soit jamais vide.
     rendreControlesSatellite();
     chargerSargasses();
   }
