@@ -32,11 +32,12 @@
     this.lecture = false;
     this.vitesse = 1;
     this.direct = true;
-    this.opacite = 0.94;
     this.minuteur = null;
     this.meta = null;
+    this.palette = this.options.palette || null;
     this.economie = detecterEconomie();
     this.echecs = 0;
+    this.opacite = typeof this.options.opacite === 'number' ? this.options.opacite : 0.94;
   }
 
   /** Le navigateur annonce-t-il une connexion limitée ou un forfait compté ? */
@@ -49,6 +50,13 @@
 
   function mouvementReduit() {
     return global.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  /** Palette d'affichage : elle colore l'observation sans modifier sa géométrie. */
+  function filtrePalette(nom) {
+    return nom === 'sable'
+      ? 'sepia(1) saturate(1.55) hue-rotate(350deg) brightness(.96) contrast(1.08)'
+      : 'none';
   }
 
   Boucle.prototype.chargerMeta = function () {
@@ -280,6 +288,7 @@
 
     ctx.save();
     ctx.globalAlpha = this.opacite;
+    ctx.filter = filtrePalette(this.palette);
     // Le calque porte déjà sa propre transparence : le ciel dégagé laisse voir
     // la carte, les nuages se posent dessus à leur densité réelle. Aucune
     // fusion additive, qui délavait l'ensemble en blanc.
@@ -310,5 +319,6 @@
     SECTEUR_CAR: SECTEUR_CAR,
     detecterEconomie: detecterEconomie,
     mouvementReduit: mouvementReduit,
+    filtrePalette: filtrePalette,
   };
 })(window);

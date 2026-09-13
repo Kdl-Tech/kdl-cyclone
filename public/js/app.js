@@ -2480,6 +2480,7 @@
     if (boucleSable) return Promise.resolve(true);
     signaler('Chargement des observations de brume de sable…');
     boucleSable = new window.KdlSatellite.Boucle({ secteur: 'atlantique', canal: 'dust', masque: false,
+      palette: 'sable', opacite: 0.72,
       surChangement: function () { if (carte) carte.dessiner(); } });
     return boucleSable.chargerMeta().then(function (meta) {
       if (!meta || !meta.images || !meta.images.length) throw new Error('indisponible');

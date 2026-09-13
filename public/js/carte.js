@@ -902,26 +902,30 @@
     if (!this.sargasses.length) return;
     var ctx = this.ctx;
     var self = this;
+    var verts = ['#2f6b3c', '#1f5935', '#123f2b'];
     this.sargasses.forEach(function (point) {
       var p = self.versEcran(point.lat, point.lon);
       var risque = Math.max(1, Math.min(3, point.risque || 1));
-      var rayon = 2.2 + risque * 1.7;
+      var rayon = 2.4 + risque * 1.4;
       ctx.save();
       ctx.translate(p.x, p.y);
       ctx.rotate(-0.22);
-      ctx.shadowColor = 'rgba(3, 14, 20, .55)';
+      ctx.shadowColor = 'rgba(3, 20, 12, .62)';
       ctx.shadowBlur = 3 + risque;
       ctx.shadowOffsetY = 2;
-      ctx.fillStyle = ['#a7b44a', '#d2a13a', '#e56f2f'][risque - 1];
-      ctx.globalAlpha = 0.68 + risque * 0.08;
+      ctx.fillStyle = verts[risque - 1];
+      ctx.globalAlpha = 0.58 + risque * 0.1;
       ctx.beginPath();
-      ctx.ellipse(0, 0, rayon * 1.8, rayon * .62, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, 0, rayon * (2.1 + risque * .25), rayon * .62, 0, 0, Math.PI * 2);
       ctx.fill();
-      ctx.globalAlpha = .55;
-      ctx.fillStyle = '#fff1a8';
-      ctx.beginPath();
-      ctx.ellipse(-rayon * .3, -rayon * .18, rayon * .7, rayon * .15, 0, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.globalAlpha = .66;
+      ctx.strokeStyle = '#b7d7aa';
+      ctx.lineWidth = .45 + risque * .18;
+      for (var trait = 0; trait < risque; trait += 1) {
+        ctx.beginPath();
+        ctx.ellipse(0, 0, rayon * (1.1 + trait * .38), rayon * (.2 + trait * .1), 0, 0, Math.PI * 2);
+        ctx.stroke();
+      }
       ctx.restore();
     });
   };
