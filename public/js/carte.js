@@ -14,7 +14,7 @@
   'use strict';
 
   var GUADELOUPE = { lat: 16.25, lon: -61.55 };
-  var VUE_DEFAUT = { centreLat: 15.5, centreLon: -50, zoom: 1 };
+  var VUE_DEFAUT = { centreLat: 19, centreLon: -45, zoom: 1 };
 
   /**
    * La carte est un objet d'observation, pas une surface d'interface : elle
@@ -71,7 +71,11 @@
       corridors: true,
       cones: true,
       grille: true,
+      sable: false,
+      sargasses: false,
     };
+    this.boucles = {};
+    this.sargasses = [];
     this.pointsCliquables = [];
     this.survole = null;
     this._installerInteractions();
@@ -97,7 +101,7 @@
   /** Échelle en pixels par degré de longitude. */
   Carte.prototype._echelle = function () {
     var l = this.canvas.clientWidth || 600;
-    return (l / 92) * this.vue.zoom; // 92° de longitude couverts au zoom 1
+    return (l / 120) * this.vue.zoom; // 120° : golfe du Mexique → Afrique au zoom 1
   };
 
   Carte.prototype.versEcran = function (lat, lon) {
@@ -153,9 +157,13 @@
     if (this.calques.satellite && this.boucle) {
       this.boucle.dessiner(ctx, this.versEcran.bind(this));
     }
+    if (this.calques.sable && this.boucles.sable) {
+      this.boucles.sable.dessiner(ctx, this.versEcran.bind(this));
+    }
 
     if (this.calques.grille) this._dessinerGrille(L, H);
     this._dessinerTerres();
+    if (this.calques.sargasses) this._dessinerSargasses();
     this._dessinerArc();
 
     // Le repère du territoire réserve sa place avant les systèmes.
@@ -206,7 +214,13 @@
       var q = this.versEcran(this.vue.centreLat, lon);
       if (q.x < -20 || q.x > L + 20) continue;
       ctx.beginPath(); ctx.moveTo(q.x, 0); ctx.lineTo(q.x, H); ctx.stroke();
-      ctx.fillText(Math.abs(lon) + '°O', q.x + 3, 4);
+      // Au cadrage Atlantique, un libellé tous les 10° se chevauche sur mobile.
+      // Les lignes restent précises, les nombres passent à 20° tant que le
+      // zoom ne leur rend pas assez de place.
+      var pasLibelle = this.vue.zoom <= 1.25 ? 20 : pas;
+      if (Math.abs(lon) % pasLibelle === 0 && q.x > 4 && q.x < L - 34) {
+        ctx.fillText(lon === 0 ? '0°' : Math.abs(lon) + '°O', q.x + 3, 4);
+      }
     }
   };
 
@@ -872,9 +886,44 @@
   };
 
   /** Rattache une boucle satellite ; elle se redessine à chaque image. */
-  Carte.prototype.attacherBoucle = function (boucle) {
-    this.boucle = boucle;
+  Carte.prototype.attacherBoucle = function (nom, boucle) {
+    if (arguments.length === 1) this.boucle = nom;
+    else this.boucles[nom] = boucle;
     this.dessiner();
+  };
+
+  Carte.prototype.definirSargasses = function (donnees) {
+    this.sargasses = donnees && Array.isArray(donnees.points) ? donnees.points : [];
+    this.sargassesDate = donnees && donnees.date;
+    this.dessiner();
+  };
+
+  Carte.prototype._dessinerSargasses = function () {
+    if (!this.sargasses.length) return;
+    var ctx = this.ctx;
+    var self = this;
+    this.sargasses.forEach(function (point) {
+      var p = self.versEcran(point.lat, point.lon);
+      var risque = Math.max(1, Math.min(3, point.risque || 1));
+      var rayon = 2.2 + risque * 1.7;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(-0.22);
+      ctx.shadowColor = 'rgba(3, 14, 20, .55)';
+      ctx.shadowBlur = 3 + risque;
+      ctx.shadowOffsetY = 2;
+      ctx.fillStyle = ['#a7b44a', '#d2a13a', '#e56f2f'][risque - 1];
+      ctx.globalAlpha = 0.68 + risque * 0.08;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, rayon * 1.8, rayon * .62, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = .55;
+      ctx.fillStyle = '#fff1a8';
+      ctx.beginPath();
+      ctx.ellipse(-rayon * .3, -rayon * .18, rayon * .7, rayon * .15, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    });
   };
 
   Carte.prototype.definirCalque = function (nom, actif) {

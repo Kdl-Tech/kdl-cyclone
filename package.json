@@ -1,8 +1,8 @@
 {
   "name": "kdl-cyclone",
-  "version": "0.18.0",
+  "version": "0.19.0",
   "private": true,
-  "description": "KDL Cyclone — Veille tropicale pour la Guadeloupe et les Petites Antilles",
+  "description": "KDL Cyclone — Veille tropicale pour la Guadeloupe et les Caraïbes",
   "author": "KDLTech (Guadeloupe)",
   "license": "SEE LICENSE IN LICENSE",
   "type": "module",

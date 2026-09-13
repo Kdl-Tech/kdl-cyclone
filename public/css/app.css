@@ -100,9 +100,8 @@
   --n3-voile: rgba(239, 68, 68, 0.12);
 
   /* --------------------------------------------- analyse maison
-     Le violet est réservé à ce que KDL calcule lui-même. Il ne figure jamais
-     dans l'échelle de risque : on ne doit pas pouvoir confondre une
-     estimation expérimentale avec une donnée officielle. */
+     Les analyses portent leur étiquette KDL ; le violet peut aussi désigner
+     la vigilance officielle cyclonique. La provenance reste explicite. */
   --kdl-analyse: #6d28d9;
   --kdl-analyse-vif: #8b5cf6;
   --kdl-analyse-voile: rgba(139, 92, 246, 0.13);
@@ -1484,6 +1483,9 @@ button { font: inherit; color: inherit; }
 .vigilance--jaune  { --d: var(--n1); }
 .vigilance--orange { --d: var(--n2); }
 .vigilance--rouge  { --d: var(--n3); }
+.vigilance--violet { --d: #8b5cf6; }
+.vigilance--gris   { --d: var(--texte-faible); }
+.vigilance--inconnu { --d: var(--texte-faible); }
 
 .vigilance__niveau {
   font-size: 1.9rem;
@@ -1535,6 +1537,9 @@ button { font: inherit; color: inherit; }
 .vigi--jaune  { --vigi-fond: #ffd23f; --vigi-texte: #372900; --vigi-bord: #d9a800; --vigi-accent: #6b5100; }
 .vigi--orange { --vigi-fond: #f2811d; --vigi-texte: #331700; --vigi-bord: #c25f06; --vigi-accent: #5c2a00; }
 .vigi--rouge  { --vigi-fond: #d92b1f; --vigi-texte: #fff4f2; --vigi-bord: #a51a10; --vigi-accent: #ffd9d4; }
+.vigi--violet { --vigi-fond: #6b21a8; --vigi-texte: #ffffff; --vigi-bord: #581c87; --vigi-accent: #ffffff; }
+.vigi--gris   { --vigi-fond: #d1d5db; --vigi-texte: #111827; --vigi-bord: #6b7280; --vigi-accent: #111827; }
+.vigi--inconnu { --vigi-accent: var(--texte-faible); }
 /* Au vert, le bandeau se fait discret : l'absence de danger s'annonce
    calmement, elle ne doit pas occuper la place d'une alerte. */
 .vigi--vert {
@@ -2900,3 +2905,222 @@ body.chercheur-ouvert { overflow: hidden; }
 .tableau-compact th, .tableau-compact td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--bordure, rgba(128,128,128,.25)); }
 .tableau-compact th { font-weight: 650; color: var(--texte-doux); font-size: .82rem; }
 .tableau-compact td:last-child, .tableau-compact th:last-child { text-align: right; }
+
+
+/* ===================================================== REFONTE CARAIBES */
+/* Interface d'instrumentation : très lisible au soleil, calme la nuit, et
+   hiérarchie serrée pour garder l'alerte et la situation dans le premier écran. */
+:root {
+  --fond: #f3efe6;
+  --fond-degrade: linear-gradient(180deg, #f6f2ea 0%, #eee9df 100%);
+  --surface-2: #f8f5ee;
+  --bordure: #d8e0e3;
+  --bordure-forte: #b9c9d0;
+  --texte: #061a2a;
+  --texte-doux: #425f70;
+  --texte-faible: #607b89;
+  --r-lg: 14px;
+  --r-xl: 18px;
+}
+:root[data-theme="sombre"] {
+  --fond: #061a2a;
+  --fond-degrade:
+    radial-gradient(800px 440px at 88% -12%, rgba(26, 153, 187, .13), transparent 62%),
+    linear-gradient(180deg, #082233 0%, #061a2a 68%);
+  --surface: #0b293b;
+  --surface-2: #0e3044;
+  --surface-3: #143b50;
+  --bordure: #23495d;
+  --bordure-forte: #36647a;
+  --texte: #f4f7f8;
+  --texte-doux: #b3c7d1;
+  --texte-faible: #88a5b3;
+}
+
+.entete__titre { text-transform: uppercase; letter-spacing: .015em; }
+.entete__titre span { color: inherit; }
+.entete__soustitre { color: var(--cyan); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.situation__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: var(--e3);
+  margin-bottom: var(--e3);
+  color: #70e6f7;
+  font-size: .7rem;
+  font-weight: 750;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+.situation__direct {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  color: #55e6b3;
+  letter-spacing: .08em;
+}
+.situation__direct::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 4px rgba(85, 230, 179, .12);
+}
+.carte-bloc { box-shadow: none; }
+
+@media (max-width: 619px) {
+  body { font-size: .95rem; }
+  .entete {
+    min-height: 64px;
+    flex-wrap: nowrap;
+    gap: 8px;
+    padding: 10px 14px;
+    padding-top: calc(10px + env(safe-area-inset-top));
+    background: color-mix(in srgb, var(--fond) 92%, transparent);
+  }
+  .entete__marque { gap: 9px; flex: 0 1 auto; }
+  .entete__logo { width: 32px; height: 32px; }
+  .entete__titre { font-size: .9rem; }
+  .entete__soustitre, .badge-lab { display: none; }
+  #selecteur-territoire {
+    order: 0;
+    flex: 0 1 128px;
+    min-width: 82px;
+    margin: 0 0 0 auto;
+  }
+  #selecteur-territoire .territoire {
+    width: 100%;
+    height: 38px;
+    padding: 0 9px;
+    gap: 5px;
+    border-radius: var(--r-pill);
+    background: transparent;
+    box-shadow: none;
+  }
+  .territoire__intitule, .territoire__lieu { display: none; }
+  .territoire__valeur { font-size: .77rem; text-align: center; }
+  .territoire__chevron { width: 13px; height: 13px; }
+  .entete__actions { margin: 0; gap: 4px; }
+  #bouton-actualiser { display: none; }
+  .entete__actions .bouton-icone { width: 38px; height: 38px; border-radius: 50%; background: transparent; }
+
+  .vigi { box-shadow: none; }
+  .vigi__interieur { min-height: 58px; padding: 9px 18px; flex-wrap: nowrap; }
+  .vigi__corps { flex-basis: auto; }
+  .vigi__titre { font-size: .88rem; }
+  .vigi__zone { display: block; font-size: .73rem; }
+  .vigi__phenos, .vigi__source { font-size: .7rem; margin: 0; }
+  .vigi__actions { display: none; }
+
+  .page { padding: 18px 18px var(--e10); }
+  .situation {
+    display: block;
+    margin: 0 0 24px;
+    padding: 7px 0 20px;
+    border-radius: 0;
+    color: var(--texte);
+    background: transparent;
+    box-shadow: none;
+    overflow: visible;
+  }
+  .situation::before { display: none; }
+  .situation__eyebrow { color: var(--cyan); margin-bottom: 10px; }
+  .situation__etat {
+    margin: 0 0 10px;
+    padding: 3px 9px;
+    font-size: .63rem;
+    letter-spacing: .1em;
+  }
+  .situation__titre {
+    max-width: 18ch;
+    font-size: clamp(1.85rem, 8.2vw, 2.25rem);
+    line-height: 1.04;
+    letter-spacing: -.045em;
+  }
+  .situation__detail { color: var(--texte-doux); font-size: .9rem; line-height: 1.45; }
+  .cartouche {
+    margin-top: 18px;
+    padding: 14px 0;
+    border: solid var(--bordure);
+    border-width: 1px 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--texte);
+    backdrop-filter: none;
+  }
+  .cartouche__source { color: var(--cyan); }
+  .cartouche__valeur b { color: var(--texte); font-size: 2.8rem; }
+  .cartouche__valeur span { color: var(--texte-doux); }
+  .cartouche__quoi { color: var(--texte-doux); font-size: .78rem; }
+  .cartouche__lignes { color: var(--texte-doux); }
+  .cartouche__lignes dd, .cartouche__kdl b { color: var(--texte); }
+  .cartouche__kdl { color: var(--texte-doux); border-color: var(--bordure); }
+  .situation__pied {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0;
+    margin-top: 14px;
+    color: var(--texte-faible);
+  }
+  .situation__pied > div { padding: 9px 8px 0 0; border-color: var(--bordure); }
+  .situation__pied > div + div { padding-left: 9px; border-left: 1px solid var(--bordure); }
+  .situation__pied > div:nth-child(4) { display: none; }
+  .situation__pied strong { color: var(--texte); font-size: .88rem; }
+  .situation__fraicheur { margin-top: 10px; color: var(--texte-faible); font-size: .68rem; }
+
+  .grille--accueil { gap: 24px; }
+  .carte-bloc { border-radius: 2px; padding: 14px; }
+  .grille--accueil > .carte-bloc { border-color: var(--bordure-forte); }
+  .section-titre { margin-bottom: 12px; }
+
+  .nav { --hauteur-nav: 68px; min-height: var(--hauteur-nav); }
+  .nav__lien { font-size: .66rem; letter-spacing: 0; }
+  .nav__lien[aria-current="page"]::before { top: auto; bottom: 0; height: 3px; }
+}
+
+@media (min-width: 620px) {
+  .entete { padding-left: max(var(--e5), calc((100vw - var(--largeur-max)) / 2)); padding-right: max(var(--e5), calc((100vw - var(--largeur-max)) / 2)); }
+  .page { padding-top: var(--e8); }
+  .situation__eyebrow { grid-column: 1 / -1; margin-bottom: calc(-1 * var(--e4)); }
+}
+
+@media (prefers-contrast: more) {
+  :root { --bordure: #607886; --bordure-forte: #34596c; }
+  .nav__lien, .territoire__valeur { font-weight: 700; }
+}
+
+
+/* Profondeur 3D légère : un seul calque composite animé par le GPU. */
+.carte-enveloppe { isolation: isolate; perspective: 900px; }
+#carte { position: relative; z-index: 1; }
+.carte-profondeur {
+  position: absolute;
+  z-index: 2;
+  inset: -42% -18%;
+  pointer-events: none;
+  opacity: .13;
+  transform-style: preserve-3d;
+  transform: rotateX(63deg) translate3d(0, 8%, 24px);
+  background: repeating-radial-gradient(ellipse at 50% 50%, rgba(126, 226, 246, .3) 0 1px, transparent 2px 18px);
+  mix-blend-mode: screen;
+  animation: ocean-profondeur 14s linear infinite;
+}
+.carte-outils, .calques, .carte-infobulle { z-index: 4; }
+@keyframes ocean-profondeur {
+  from { background-position: 0 0; }
+  to { background-position: 72px 36px; }
+}
+@media (prefers-reduced-motion: reduce), (max-width: 600px) {
+  .carte-profondeur { animation: none; opacity: .07; }
+}
+
+
+/* Lisibilité des valeurs longues et contraste du cartouche clair. */
+@media (max-width: 619px) {
+  .cartouche__lignes dt { color: var(--texte-faible); }
+  .cartouche__lignes dd { max-width: 64%; overflow-wrap: anywhere; text-align: right; }
+  .cartouche__barre { background: var(--surface-3); }
+  .cartouche__kdl { display: flex; flex-wrap: wrap; gap: 6px 10px; }
+  .cartouche .etiquette--kdl { color: var(--kdl-analyse); border-color: var(--kdl-analyse); }
+  .vigi__titre, .vigi__phenos, .vigi__source { overflow-wrap: anywhere; }
+}

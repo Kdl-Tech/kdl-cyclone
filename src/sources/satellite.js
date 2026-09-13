@@ -30,8 +30,8 @@ const BASE = 'https://cdn.star.nesdis.noaa.gov/GOES19/ABI/SECTOR';
  * `taw` remonte jusqu'à l'Afrique et sert à suivre les ondes à leur départ.
  */
 export const SECTEURS = {
-  caraibes: { code: 'car', libelle: 'Caraïbes et Petites Antilles', taille: '500x500' },
-  atlantique: { code: 'taw', libelle: 'Atlantique tropical', taille: '450x270' },
+  caraibes: { code: 'car', libelle: 'Caraïbes', taille: '500x500', emprise: { nord: 33, sud: 5, ouest: -95, est: -55 } },
+  atlantique: { code: 'taw', libelle: 'Atlantique complet', taille: '450x270', emprise: { nord: 45, sud: -5, ouest: -105, est: 15 } },
 };
 
 /**
@@ -42,6 +42,7 @@ export const CANAUX = {
   geocolor: { code: 'GEOCOLOR', libelle: 'Visible et infrarouge', description: 'Composite GeoColor : couleurs naturelles le jour, infrarouge la nuit.' },
   ir: { code: '13', libelle: 'Infrarouge', description: 'Canal 13 : température des sommets nuageux, de jour comme de nuit.' },
   vapeur: { code: '09', libelle: "Vapeur d'eau", description: "Canal 9 : humidité de moyenne troposphère, révèle l'air sec." },
+  dust: { code: 'Dust', libelle: 'Brumes de sable', description: 'Composite Dust RGB GOES-19 : poussières sahariennes observées toutes les dix minutes.' },
 };
 
 // Douze images, soit deux heures de boucle : assez pour lire un mouvement,
@@ -217,6 +218,7 @@ export async function rafraichirBoucle(secteur = 'caraibes', canal = 'geocolor',
     libelleSecteur: SECTEURS[secteur].libelle,
     libelleCanal: CANAUX[canal].libelle,
     descriptionCanal: CANAUX[canal].description,
+    emprise: SECTEURS[secteur].emprise,
     images: disponibles,
     derniereImage: derniere?.instant || null,
     telechargees,

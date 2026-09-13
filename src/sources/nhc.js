@@ -474,11 +474,20 @@ export async function fetchInvests(annee = new Date().getUTCFullYear()) {
  * Aucune exception ne remonte : le rapport dit ce qui a échoué et ce qui n'a
  * pas changé depuis la dernière fois.
  */
-export async function collecterNhc() {
-  const [zones, texte, actifs, invests] = await Promise.all([
+export async function verifierBulletinsNhc() {
+  const [zones, texte, actifs] = await Promise.all([
     fetchOutlookZones(),
     fetchOutlookTexte(),
     fetchSystemesActifs(),
+  ]);
+  return { zones, texte, actifs };
+}
+
+export async function collecterNhc(prefetch = {}) {
+  const [zones, texte, actifs, invests] = await Promise.all([
+    prefetch.zones ? Promise.resolve(prefetch.zones) : fetchOutlookZones(),
+    prefetch.texte ? Promise.resolve(prefetch.texte) : fetchOutlookTexte(),
+    prefetch.actifs ? Promise.resolve(prefetch.actifs) : fetchSystemesActifs(),
     fetchInvests().catch((e) => ({ ok: false, invests: null, erreur: e.message })),
   ]);
 

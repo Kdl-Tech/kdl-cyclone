@@ -83,7 +83,7 @@ const limiteurObservation = new Limiteur(25, 60_000);
 
 /** Durées de cache, par nature de donnée. */
 const CACHE_MS = {
-  vigilance: 5 * 60 * 1000,      // cadence de collecte de l'application
+  vigilance: 55 * 1000,          // revalidation quasi-directe, sans requête concurrente
   // Les stations publient à l'heure ronde et le paquet pèse 709 Ko : le
   // rappeler plus souvent qu'une fois par heure ne donnerait rien de neuf et
   // téléchargerait 17 Mo par jour pour rien.
@@ -178,6 +178,10 @@ const COULEURS = {
   2: { cle: 'jaune', libelle: 'Jaune', rang: 2 },
   3: { cle: 'orange', libelle: 'Orange', rang: 3 },
   4: { cle: 'rouge', libelle: 'Rouge', rang: 4 },
+  5: { cle: 'violet', libelle: 'Violet', rang: 5 },
+  // Le gris décrit les dangers subsistants après le passage du cyclone.
+  // Son identifiant 6 n'est pas un sixième degré de gravité.
+  6: { cle: 'gris', libelle: 'Gris', rang: null, phase: 'post-cyclone' },
 };
 
 function nommerPhenomene(id) {
@@ -186,8 +190,10 @@ function nommerPhenomene(id) {
 }
 
 function nommerCouleur(id) {
-  const n = Number(id);
-  return COULEURS[n] || { cle: 'inconnu', libelle: `Niveau ${id}`, rang: 0 };
+  const n = typeof id === 'number' || (typeof id === 'string' && id.trim())
+    ? Number(id) : NaN;
+  if (n === 0 || n === -1) return { cle: 'non-evalue', rang: 0 };
+  return COULEURS[n] || { cle: 'inconnu', libelle: 'Niveau indisponible', rang: null };
 }
 
 // ---------------------------------------------------------------- accès
@@ -274,6 +280,33 @@ export function oublierCache() {
   memoire.clear();
 }
 
+/** Propage l'état périmé à chaque territoire affiché. */
+export function marquerVigilancesPerimees(parTerritoire, verifieLe) {
+  return Object.fromEntries(Object.entries(parTerritoire || {}).map(([cle, vigilance]) => [cle, {
+    ...vigilance,
+    perime: true,
+    verifieLe,
+  }]));
+}
+
+/** Construit un état dégradé sans effacer la dernière vigilance valide. */
+export function construireSecoursVigilance(secours, motif, reponse = {}) {
+  const verifieLe = reponse.recuLe || new Date().toISOString();
+  return {
+    disponible: Boolean(secours),
+    inchange: true,
+    motif,
+    definitif: Boolean(reponse.__definitif),
+    verifieLe,
+    parTerritoire: marquerVigilancesPerimees(secours?.valeur?.parTerritoire, verifieLe),
+    ...(secours ? {
+      perime: true,
+      emisLe: secours.valeur.emisLe || null,
+      conserveeDepuis: new Date(secours.recuLe).toISOString(),
+    } : {}),
+  };
+}
+
 // ------------------------------------------------------ analyse du flux
 
 /**
@@ -312,23 +345,25 @@ export function vigilanceDepuisJson(document, zone) {
 
   const phenomenes = (Array.isArray(bloc.phenomenon_items) ? bloc.phenomenon_items : [])
     .map((p) => ({
-      nom: nommerPhenomene(p.phenomenon_id),
-      ...nommerCouleur(p.phenomenon_max_color_id),
-      // Le début de l'épisode est porté par la chronologie du phénomène.
-      debut: p.timelaps_items?.[0]?.begin_time || null,
+      nom: nommerPhenomene(p?.phenomenon_id),
+      ...nommerCouleur(p?.phenomenon_max_color_id),
+      debut: p?.timelaps_items?.[0]?.begin_time || null,
     }))
-    // Les couleurs 0 et -1 signifient « non évalué » pour ce territoire :
-    // les afficher ferait passer une absence d'évaluation pour un niveau vert.
-    .filter((p) => p.rang > 0)
-    .sort((a, b) => b.rang - a.rang);
+    // Seuls 0 et -1 signifient explicitement « non évalué ».
+    // Une couleur absente ou nouvelle reste visible comme inconnue.
+    .filter((p) => p.cle !== 'non-evalue')
+    .sort((a, b) => (b.rang ?? 0) - (a.rang ?? 0));
 
-  // Le niveau retenu est le plus fort annoncé, qu'il vienne du domaine ou du
-  // phénomène le plus grave. Les deux concordent normalement ; en cas de
-  // désaccord, on retient toujours le plus prudent.
-  const niveauDomaine = nommerCouleur(bloc.max_color_id);
-  const niveauPhenomene = phenomenes[0] || { rang: 0 };
-  const niveau = niveauDomaine.rang >= niveauPhenomene.rang ? niveauDomaine : niveauPhenomene;
-  if (niveau.rang === 0) return null;
+  const niveaux = [nommerCouleur(bloc.max_color_id), ...phenomenes];
+  const incomplete = niveaux.some((p) => p.cle === 'inconnu');
+  // Les alertes actives priment sur la phase post-cyclone ; celle-ci reste
+  // explicitement présente dans la liste des phénomènes. Aucun rang 6.
+  const danger = niveaux.filter((p) => p.rang >= 2).sort((a, b) => b.rang - a.rang)[0];
+  const niveau = danger
+    || niveaux.find((p) => p.cle === 'gris')
+    || niveaux.find((p) => p.cle === 'inconnu')
+    || niveaux.find((p) => p.cle === 'vert');
+  if (!niveau) return null;
 
   return {
     zone: zone.libelle,
@@ -336,12 +371,14 @@ export function vigilanceDepuisJson(document, zone) {
     niveau: niveau.cle,
     niveauLibelle: niveau.libelle,
     niveauRang: niveau.rang,
+    phase: niveau.phase || null,
+    incomplete,
     phenomenes: phenomenes.map((p) => ({
-      nom: p.nom, niveau: p.cle, niveauLibelle: p.libelle, debut: p.debut,
+      nom: p.nom, niveau: p.cle, niveauLibelle: p.libelle, debut: p.debut, phase: p.phase || null,
     })),
     // Seuls les phénomènes réellement en vigilance (au-dessus du vert)
     // méritent d'être mis en avant dans l'interface.
-    phenomenesActifs: phenomenes.filter((p) => p.rang >= 2).map((p) => p.nom),
+    phenomenesActifs: phenomenes.filter((p) => p.rang >= 2 || p.cle === 'gris').map((p) => p.nom),
   };
 }
 
@@ -378,7 +415,11 @@ export function analyserFluxOutreMer(entrees, zone) {
     const vigilance = vigilanceDepuisJson(document, zone);
     if (vigilance) {
       return {
-        vigilance: { ...vigilance, fichier: nom },
+        vigilance: {
+          ...vigilance,
+          fichier: nom,
+          emisLe: document.update_time || emisLe,
+        },
         entrees: noms,
         emisLe: document.update_time || emisLe,
       };
@@ -403,11 +444,11 @@ export function analyserFluxOutreMer(entrees, zone) {
  */
 export async function vigilances() {
   const entetes = entetesAuth();
-  if (!entetes) return { disponible: false, motif: 'jeton non configuré', parTerritoire: {} };
+  if (!entetes) return { disponible: false, motif: 'jeton non configuré', parTerritoire: {}, inchange: true };
 
   const CLE = 'vigilance:outremer';
   const frais = lireCache(CLE, CACHE_MS.vigilance);
-  if (frais) return { ...frais.valeur, cache: true };
+  if (frais) return { ...frais.valeur, cache: true, inchange: true };
 
   // Une seule requête sert tous les territoires : le flux outre-mer est un
   // document unique. Analyser zone par zone après coup coûte quelques
@@ -420,24 +461,37 @@ export async function vigilances() {
   if (estErreur(reponse) || estInchange(reponse)) {
     const secours = derniereValide(CLE, SURVIE_VIGILANCE_MS);
     if (estInchange(reponse) && secours) {
-      return { ...secours.valeur, emisLe: reponse.emisLe || secours.valeur.emisLe };
+      const valeur = {
+        ...secours.valeur,
+        inchange: true,
+        verifieLe: reponse.recuLe,
+        parTerritoire: Object.fromEntries(
+          Object.entries(secours.valeur.parTerritoire || {}).map(([cle, vigilance]) => [cle, {
+            ...vigilance,
+            perime: false,
+            verifieLe: reponse.recuLe,
+          }]),
+        ),
+      };
+      ecrireCache(CLE, { valeur });
+      return valeur;
     }
-    return {
-      disponible: Boolean(secours),
-      motif: estInchange(reponse) ? 'document inchangé, rien en mémoire' : expliquer(reponse),
-      definitif: Boolean(reponse.__definitif),
-      parTerritoire: secours?.valeur?.parTerritoire || {},
-      ...(secours
-        ? { perime: true, conserveeDepuis: new Date(secours.recuLe).toISOString() }
-        : {}),
-    };
+    return construireSecoursVigilance(
+      secours,
+      estInchange(reponse) ? 'document inchangé, rien en mémoire' : expliquer(reponse),
+      reponse,
+    );
   }
 
   let entrees;
   try {
     entrees = unzip(reponse.corps);
   } catch (err) {
-    return { disponible: false, motif: `archive illisible : ${err.message}`, parTerritoire: {} };
+    return construireSecoursVigilance(
+      derniereValide(CLE, SURVIE_VIGILANCE_MS),
+      `archive illisible : ${err.message}`,
+      reponse,
+    );
   }
 
   const parTerritoire = {};
@@ -453,6 +507,9 @@ export async function vigilances() {
     reconnues += 1;
     parTerritoire[cleTerritoire] = {
       ...analyse.vigilance,
+      emisLe: analyse.emisLe || reponse.emisLe || null,
+      verifieLe: reponse.recuLe,
+      perime: false,
       source: 'Météo-France',
       licence: 'Licence Ouverte 2.0 (Etalab)',
       lien: 'https://vigilance.meteofrance.fr/fr',
@@ -461,24 +518,26 @@ export async function vigilances() {
 
   if (!reconnues) {
     return {
-      disponible: false,
-      motif: 'format non reconnu',
+      ...construireSecoursVigilance(
+        derniereValide(CLE, SURVIE_VIGILANCE_MS),
+        'format non reconnu',
+        reponse,
+      ),
       // Noms de fichiers seulement : de quoi diagnostiquer, rien de sensible.
       fichiersRecus: noms.slice(0, 20),
-      parTerritoire: {},
     };
   }
 
-  // L'heure d'émission accompagne chaque territoire : l'interface l'affiche à
-  // côté du niveau, et une vigilance sans heure ne vaut rien.
+  // Chaque territoire conserve l'heure portée par son propre document.
   const emission = emisLe || reponse.emisLe || null;
-  for (const entree of Object.values(parTerritoire)) entree.emisLe = emission;
 
   const valeur = {
     disponible: true,
+    inchange: false,
     parTerritoire,
     emisLe: emission,
     recuLe: reponse.recuLe,
+    verifieLe: reponse.recuLe,
     sha256: reponse.sha256,
     source: 'Météo-France',
     licence: 'Licence Ouverte 2.0 (Etalab)',

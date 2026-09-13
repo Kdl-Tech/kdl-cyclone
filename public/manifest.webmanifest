@@ -1,7 +1,7 @@
 {
-  "name": "KDL Cyclone — Veille Antilles",
+  "name": "KDL Cyclone — Veille Caraïbes",
   "short_name": "KDL Cyclone",
-  "description": "Veille tropicale pour la Guadeloupe et les Petites Antilles. Suivez les ondes tropicales, comprenez leur potentiel d'évolution et préparez-vous. Bêta publique du KDL Lab, par KDLTech. Comprendre tôt. Se préparer calmement.",
+  "description": "Veille tropicale pour la Guadeloupe et les Caraïbes. Suivez les ondes tropicales, comprenez leur potentiel d'évolution et préparez-vous. Bêta publique du KDL Lab, par KDLTech. Comprendre tôt. Se préparer calmement.",
   "lang": "fr",
   "dir": "ltr",
   "start_url": "/",

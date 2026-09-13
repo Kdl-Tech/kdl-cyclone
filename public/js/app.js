@@ -441,16 +441,22 @@
     var terr = territoireActif();
     var vig = terr && terr.vigilanceOfficielle;
     if (!vig || !vig.niveau) {
-      zone.className = 'vigi est-cache';
-      zone.innerHTML = '';
-      return;
+      var couvert = ['guadeloupe', 'martinique', 'saint-martin', 'saint-barthelemy',
+        'marie-galante', 'les-saintes', 'la-desirade'].indexOf(cleTerritoire()) !== -1;
+      if (!couvert) {
+        zone.className = 'vigi est-cache';
+        zone.innerHTML = '';
+        return;
+      }
+      vig = { niveau: 'inconnu', phenomenes: [], zone: terr ? terr.nom : cleTerritoire() };
     }
+    var nonActualisee = vig.perime || horsLigne || ageDonnees() > 3 * 3600 * 1000;
 
     var phenomenes = vig.phenomenes || [];
     var alerte = vig.niveau !== 'vert';
     // Les phénomènes réellement en vigilance, du plus grave au moins grave :
     // c'est la liste servie par la source, déjà triée.
-    var actifs = phenomenes.filter(function (p) { return p.niveau && p.niveau !== 'vert'; });
+    var actifs = phenomenes.filter(function (p) { return p.niveau && p.niveau !== 'vert' && p.niveau !== 'inconnu'; });
     var cyclone = phenomenes.filter(function (p) { return p.nom === 'Cyclone'; })[0];
 
     // Le niveau de chaque phénomène n'est écrit que s'il diffère du niveau
@@ -459,36 +465,48 @@
       return echapper(p.nom) + (p.niveau === vig.niveau ? '' : ' (' + echapper(p.niveau) + ')');
     }).join(' · ');
 
-    var titre = alerte
-      ? 'Vigilance ' + echapper(vig.niveau)
+    var titre = vig.niveau === 'inconnu' ? 'Vigilance indisponible'
+      : nonActualisee ? 'Dernière vigilance connue : ' + echapper(vig.niveau)
+      : alerte ? 'Vigilance ' + echapper(vig.niveau)
       : 'Aucune vigilance en cours';
 
-    var ligne2 = alerte
-      ? listePhenos
+    var ligne2 = vig.niveau === 'inconnu'
+      ? 'Consultez Météo-France pour connaître la situation officielle.'
+      : alerte ? listePhenos
+      : nonActualisee ? 'Le dernier bulletin reçu indiquait un niveau vert. La situation actuelle reste à vérifier.'
       : 'Météo-France ne signale aucun phénomène dangereux à cette heure.';
 
     // Le cyclone est la raison d'être de l'application : dès qu'il est lui-même
     // en vigilance, il est nommé en clair, avant les autres phénomènes.
-    if (alerte && cyclone && cyclone.niveau !== 'vert') {
+    if (alerte && cyclone && cyclone.niveau !== 'vert' && cyclone.niveau !== 'inconnu') {
       var autres = actifs.filter(function (p) { return p.nom !== 'Cyclone'; }).map(function (p) {
         return echapper(p.nom) + (p.niveau === vig.niveau ? '' : ' (' + echapper(p.niveau) + ')');
       }).join(' · ');
       ligne2 = 'CYCLONE — vigilance ' + echapper(cyclone.niveau) + (autres ? ' · ' + autres : '');
     }
 
+    if (cyclone && cyclone.niveau === 'violet' || vig.niveau === 'violet') {
+      ligne2 += ' · Niveau associé au confinement ; consultez les consignes officielles.';
+    }
+    if (cyclone && cyclone.niveau === 'gris' || vig.niveau === 'gris') {
+      ligne2 += ' · Après le passage du cyclone : prudence face aux dangers subsistants.';
+    }
+    if (vig.incomplete) ligne2 += ' · Information incomplète : vérifiez le bulletin officiel.';
+
     zone.className = 'vigi vigi--' + echapper(vig.niveau);
     zone.innerHTML = '<div class="vigi__interieur">'
       + (alerte ? ICONES.alerte : ICONES.bouclier).replace('<svg ', '<svg class="vigi__icone" ')
       + '<div class="vigi__corps">'
       + '<p class="vigi__titre">' + titre
-      + ' <span class="vigi__zone">— ' + echapper(vig.zone || terr.nom) + '</span></p>'
+      + ' <span class="vigi__zone">— ' + echapper(vig.zone || (terr && terr.nom) || cleTerritoire()) + '</span></p>'
       + '<p class="vigi__phenos">' + ligne2 + '</p>'
-      + '<p class="vigi__source">Météo-France · bulletin émis à '
-      + heureLocale(vig.emisLe, true) + ' (heure locale)'
+      + '<p class="vigi__source">Météo-France · '
+      + (vig.emisLe ? 'bulletin émis à ' + heureLocale(vig.emisLe, true) + ' (heure locale)'
+        : 'heure du bulletin indisponible')
       + (vig.perime ? ' · dernière vigilance connue, la source n\'a pas répondu au dernier appel' : '')
       // Hors connexion ou collecte interrompue : le bandeau ne doit jamais
       // laisser croire qu'il montre la situation de l'instant.
-      + (horsLigne || ageDonnees() > 3 * 3600 * 1000
+      + (nonActualisee
         ? ' · <strong>information non actualisée, vérifiez sur Météo-France</strong>'
         : '')
       + '</p>'
@@ -798,6 +816,7 @@
     $('#situation').className = 'situation ' + classeTon;
     $('#situation').innerHTML =
       '<div class="situation__corps">'
+      + '<div class="situation__eyebrow">Centre de veille Caraïbes <span class="situation__direct">Direct</span></div>'
       + '<div class="situation__etat"><span class="pastille"></span>' + libelleEtat + '</div>'
       + '<h1 class="situation__titre">' + echapper(s.resume.titre) + '</h1>'
       + '<p class="situation__detail">' + echapper(s.resume.detail) + '</p>'
@@ -1217,7 +1236,10 @@
         + (actifs.length
           ? '<p class="vigilance__phenomenes">Phénomène(s) concerné(s) : <strong>'
             + actifs.map(echapper).join('</strong>, <strong>') + '</strong></p>'
-          : '<p class="vigilance__phenomenes">Aucun phénomène en vigilance à cette heure.</p>')
+          : '<p class="vigilance__phenomenes">' + (vig.niveau === 'vert' && !vig.incomplete
+            ? 'Aucun phénomène en vigilance dans ce bulletin.'
+            : 'Consultez le bulletin officiel pour le détail des phénomènes.') + '</p>')
+        + (vig.incomplete ? '<p>Information incomplète : vérifiez le bulletin officiel.</p>' : '')
         // Le phénomène « Cyclone » est la raison d'être de l'application : son
         // niveau est dit explicitement, même au vert. C'est précisément la
         // question que se pose le visiteur, et une réponse rassurante donnée
@@ -1228,7 +1250,7 @@
           return '<p class="vigilance__cyclone vigilance--' + echapper(cyc.niveau) + '">'
             + 'Vigilance cyclone : <strong>' + echapper(cyc.niveauLibelle) + '</strong>'
             + (cyc.niveau === 'vert'
-              ? ' — Météo-France ne signale aucun danger cyclonique pour ce territoire.'
+              ? ' — Ce bulletin indique un niveau vert pour le cyclone.'
               : '')
             + '</p>';
         }())
@@ -1719,9 +1741,9 @@
     bloc.hidden = false;
     bloc.innerHTML =
       '<img class="signature__logo" src="/icons/logo-96.png" alt="" width="40" height="40">'
-      + '<p class="signature__texte"><strong>Une technologie KDLTech au service des Antilles.</strong> '
+      + '<p class="signature__texte"><strong>Une technologie KDLTech au service des Caraïbes.</strong> '
       + 'KDL Cyclone est un service gratuit conçu en Guadeloupe par KDLTech pour rendre la veille '
-      + 'tropicale plus claire, accessible et utile aux habitants des Antilles.</p>'
+      + 'tropicale plus claire, accessible et utile aux habitants des Caraïbes.</p>'
       + '<div class="signature__actions">'
       + '<button class="bouton bouton--discret" type="button" data-vers="apropos">Comment c\'est fait</button>'
       + '<a class="bouton bouton--discret" href="' + KDLTECH.decouvrir + '" target="_blank" rel="noopener noreferrer" data-kdltech>Découvrir KDLTech</a>'
@@ -2303,6 +2325,8 @@
   // ----------------------------------------------------------- satellite
 
   var boucle = null;
+  var boucleSable = null;
+  var sargassesChargees = false;
 
   function rendreControlesSatellite() {
     var zone = $('#satellite-controles');
@@ -2450,6 +2474,46 @@
       // des animations réduites.
       if (!window.KdlSatellite.mouvementReduit()) boucle.jouer();
     });
+  }
+
+  function chargerSable() {
+    if (boucleSable) return Promise.resolve(true);
+    signaler('Chargement des observations de brume de sable…');
+    boucleSable = new window.KdlSatellite.Boucle({ secteur: 'atlantique', canal: 'dust', masque: false,
+      surChangement: function () { if (carte) carte.dessiner(); } });
+    return boucleSable.chargerMeta().then(function (meta) {
+      if (!meta || !meta.images || !meta.images.length) throw new Error('indisponible');
+      return boucleSable.charger();
+    }).then(function (ok) {
+      if (!ok) throw new Error('indisponible');
+      carte.attacherBoucle('sable', boucleSable);
+      if (!window.KdlSatellite.mouvementReduit()) boucleSable.jouer();
+      signaler('Brumes de sable NOAA affichées.');
+      return true;
+    }).catch(function () {
+      boucleSable = null;
+      var c = document.querySelector('[data-calque="sable"]');
+      if (c) c.checked = false;
+      signaler('La couche de brume de sable est momentanément indisponible.');
+      return false;
+    });
+  }
+
+  function chargerSargasses() {
+    if (sargassesChargees) return Promise.resolve(true);
+    signaler('Chargement du risque sargasses NOAA…');
+    return fetch('/api/sargasses').then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+      .then(function (donnees) {
+        carte.definirSargasses(donnees);
+        sargassesChargees = true;
+        signaler('Sargasses NOAA du ' + (donnees.date || 'dernier relevé') + ' affichées.');
+        return true;
+      }).catch(function () {
+        var c = document.querySelector('[data-calque="sargasses"]');
+        if (c) c.checked = false;
+        signaler('La couche sargasses NOAA est momentanément indisponible.');
+        return false;
+      });
   }
 
   // ------------------------------------------------------------------ météo
@@ -3045,7 +3109,7 @@
       + '<h3 class="section-titre">Participez à la bêta</h3>'
       + '<p style="max-width:64ch;margin-bottom:var(--e4)">'
       + 'Essayez gratuitement l\'application, installez-la si vous le souhaitez et aidez KDLTech '
-      + 'à améliorer cet outil conçu pour les Antilles.</p>'
+      + 'à améliorer cet outil conçu pour les Caraïbes.</p>'
       + '<div style="display:flex;flex-wrap:wrap;gap:var(--e2)">'
       + '<button class="bouton bouton--principal" type="button" data-vers="accueil">Essayer la bêta</button>'
       + (installee ? '' : '<button class="bouton" type="button" data-vers="installer">Installer gratuitement</button>')
@@ -3436,7 +3500,7 @@
     // Le titre d'onglet dit quel territoire est consulté : c'est aussi ce que
     // reprennent les favoris et l'historique du navigateur.
     var suffixe = terr.cle === 'guadeloupe' || vue === 'guadeloupe' ? '' : ' · ' + terr.nom;
-    document.title = 'KDL Cyclone — ' + (titres[vue] || 'Veille Antilles') + suffixe;
+    document.title = 'KDL Cyclone — ' + (titres[vue] || 'Veille Caraïbes') + suffixe;
     mesurer('visite', vue);
   }
 
@@ -3555,7 +3619,9 @@
     surveillerVisibiliteCarte();
 
     var calques = [
-      ['satellite', 'Satellite (boucle)', false],
+      ['satellite', 'Nuages satellite', false],
+      ['sable', 'Brumes de sable', false],
+      ['sargasses', 'Sargasses', false],
       ['zones', 'Zones surveillées', true],
       ['trajectoires', 'Trajectoires officielles', true],
       ['cones', 'Cônes officiels', true],
@@ -3580,6 +3646,8 @@
       + '<span><i style="background:var(--ambre)"></i>Surveillance · 1 anneau</span>'
       + '<span><i style="background:var(--ambre-vif)"></i>Préparation · 2 anneaux</span>'
       + '<span><i style="background:var(--rouge)"></i>Impact possible · 3 anneaux</span>'
+      + '<span><i style="background:var(--d-sable)"></i>Sable · NOAA GOES-19</span>'
+      + '<span><i style="background:#b88a2e"></i>Sargasses · NOAA SIR</span>'
       + '<span style="color:var(--texte-faible)">Trait plein = officiel NHC · '
       + 'pointillés = corridor KDL indicatif · la flèche donne le sens de déplacement connu · '
       + 'le pourcentage est la probabilité officielle à 7 jours</span>';
@@ -3747,7 +3815,7 @@
     if (e.target.closest('#reessayer')) return charger(true);
     if (e.target.closest('#zoom-plus')) return carte && carte.zoomer(1.3);
     if (e.target.closest('#zoom-moins')) return carte && carte.zoomer(1 / 1.3);
-    if (e.target.closest('#recentrer')) return carte && carte.recentrer('guadeloupe');
+    if (e.target.closest('#recentrer')) return carte && carte.recentrer();
     if (e.target.closest('#plein-ecran')) return basculerPleinEcran();
     if (e.target.closest('#fermer-panneau')) return fermerPanneauSysteme();
 
@@ -3864,6 +3932,14 @@
     }
     var calque = e.target.closest('[data-calque]');
     if (calque && carte) {
+      if (calque.dataset.calque === 'sable' && calque.checked && !boucleSable) {
+        chargerSable();
+        return;
+      }
+      if (calque.dataset.calque === 'sargasses' && calque.checked && !sargassesChargees) {
+        chargerSargasses();
+        return;
+      }
       if (calque.dataset.calque === 'satellite' && calque.checked && !boucle) {
         calque.checked = false;
         chargerSatellite();
@@ -3904,9 +3980,12 @@
    * L'interrogation périodique reste en place comme filet.
    */
   var fluxErreurs = 0;
+  var fluxActif = null;
+  var minuterieReconnexionFlux = null;
   function ouvrirFlux() {
-    if (!('EventSource' in window)) return;
+    if (!('EventSource' in window) || fluxActif) return;
     var flux = new EventSource('/api/flux');
+    fluxActif = flux;
 
     flux.addEventListener('maj', function (e) {
       fluxErreurs = 0;
@@ -3930,7 +4009,12 @@
       fluxErreurs += 1;
       // EventSource se reconnecte seul ; au-delà de plusieurs échecs, on
       // s'appuie uniquement sur l'interrogation périodique.
-      if (fluxErreurs > 6) flux.close();
+      if (fluxErreurs > 6) {
+        flux.close();
+        fluxActif = null;
+        clearTimeout(minuterieReconnexionFlux);
+        minuterieReconnexionFlux = setTimeout(ouvrirFlux, 30000);
+      }
     };
   }
 
@@ -3952,7 +4036,14 @@
   }
 
   ouvrirFlux();
-  setInterval(function () { if (!document.hidden) charger(); }, 10 * 60 * 1000);
+  window.addEventListener('online', function () {
+    if (fluxActif) fluxActif.close();
+    fluxActif = null;
+    clearTimeout(minuterieReconnexionFlux);
+    ouvrirFlux();
+    charger();
+  });
+  setInterval(function () { if (!document.hidden) charger(); }, 2 * 60 * 1000);
 
   // ------------------------------------------------------------- démarrage
 
@@ -3981,6 +4072,17 @@
   }
 
   appliquerTheme(document.documentElement.dataset.theme || 'clair');
+
+  // Sans choix manuel, le thème continue de suivre le système en temps réel.
+  if (window.matchMedia) {
+    var preferenceSombre = window.matchMedia('(prefers-color-scheme: dark)');
+    var suivreThemeSysteme = function (e) {
+      var memorise = null;
+      try { memorise = localStorage.getItem(CLE_THEME); } catch (err) { memorise = null; }
+      if (!memorise) appliquerTheme(e.matches ? 'sombre' : 'clair');
+    };
+    if (preferenceSombre.addEventListener) preferenceSombre.addEventListener('change', suivreThemeSysteme);
+  }
 
   // La coquille est utilisable avant toute requête : logo, navigation, choix du
   // territoire, thème et actualisation répondent dès la première image.

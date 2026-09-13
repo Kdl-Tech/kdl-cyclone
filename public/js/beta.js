@@ -78,7 +78,7 @@
       {
         cle: 'email',
         nom: 'E-mail',
-        url: 'mailto:?subject=' + encodeURIComponent('KDL Cyclone — veille tropicale aux Antilles')
+        url: 'mailto:?subject=' + encodeURIComponent('KDL Cyclone — veille tropicale dans les Caraïbes')
           + '&body=' + t,
       },
     ];

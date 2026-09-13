@@ -24,6 +24,9 @@
 
   function Boucle(options) {
     this.options = options || {};
+    this.secteur = this.options.secteur || 'caraibes';
+    this.canal = this.options.canal || 'geocolor';
+    this.masque = this.options.masque !== false;
     this.images = [];          // { instant, chemin, element, chargee }
     this.index = 0;
     this.lecture = false;
@@ -50,7 +53,7 @@
 
   Boucle.prototype.chargerMeta = function () {
     var self = this;
-    return fetch('/api/satellite')
+    return fetch('/api/satellite?secteur=' + encodeURIComponent(this.secteur) + '&canal=' + encodeURIComponent(this.canal))
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (m) {
         self.meta = m;
@@ -170,7 +173,7 @@
           resoudre({
             instant: info.instant,
             chemin: info.chemin,
-            element: preparerCalque(img),
+            element: self.masque ? preparerCalque(img) : img,
             chargee: true,
           });
         };
@@ -268,8 +271,9 @@
     var image = this.imageCourante();
     if (!image || !image.element) return false;
 
-    var hautGauche = projeter(SECTEUR_CAR.nord, SECTEUR_CAR.ouest);
-    var basDroite = projeter(SECTEUR_CAR.sud, SECTEUR_CAR.est);
+    var emprise = (this.meta && this.meta.emprise) || SECTEUR_CAR;
+    var hautGauche = projeter(emprise.nord, emprise.ouest);
+    var basDroite = projeter(emprise.sud, emprise.est);
     var largeur = basDroite.x - hautGauche.x;
     var hauteur = basDroite.y - hautGauche.y;
     if (largeur <= 0 || hauteur <= 0) return false;

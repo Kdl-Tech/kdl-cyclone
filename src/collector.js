@@ -5,7 +5,7 @@
  */
 
 import { CONFIG, GUADELOUPE } from './config.js';
-import { collecterNhc } from './sources/nhc.js';
+import { collecterNhc, verifierBulletinsNhc } from './sources/nhc.js';
 import {
   fetchEnvironnement,
   fetchMer,
@@ -31,6 +31,7 @@ import {
 } from './sources/meteofrance.js';
 import { territoiresEvalues, territoire, liensOfficiels, avertissementOfficiel, TERRITOIRE_DEFAUT } from './territoires.js';
 import { fraicheur, detecterChangements, detecterDisparitions, consigner, lireJournal, chronologie, ETATS } from './journal.js';
+import { evaluerVeilleOfficielle, reutiliserDerniereListe } from './direct.js';
 
 export const VERSION_ETAT = 1;
 
@@ -76,15 +77,24 @@ const SOURCES = [
   },
 ];
 
+/** Vérification légère des seuls bulletins officiels, sans modèles ni images. */
+export async function verifierBulletinsOfficiels() {
+  const [mf, nhc] = await Promise.all([
+    vigilances().catch((e) => ({ disponible: false, motif: e.message, parTerritoire: {} })),
+    verifierBulletinsNhc(),
+  ]);
+  return evaluerVeilleOfficielle({ mf, ...nhc });
+}
+
 /** Une seule collecte complète. Retourne l'état publié. */
-export async function collecter() {
+export async function collecter(prefetch = {}) {
   const debut = Date.now();
   const degradations = [];
 
   // Vigilance officielle française. Volontairement isolée du reste : si elle
   // échoue, la veille continue sur le NHC. Une couche officielle absente se
   // signale, elle ne fait pas tomber l'application.
-  const mf = await vigilances().catch((e) => ({
+  const mf = prefetch.mf || await vigilances().catch((e) => ({
     disponible: false,
     motif: e.message,
     parTerritoire: {},
@@ -98,7 +108,7 @@ export async function collecter() {
     degradations.push(`Météo-France : ${mf.motif}`);
   }
 
-  const nhc = await collecterNhc().catch((e) => {
+  const nhc = await collecterNhc(prefetch.nhc).catch((e) => {
     degradations.push(`NHC injoignable : ${e.message}`);
     return { zones: null, systemes: null, outlookTexte: null, erreurs: [], tracabilite: [] };
   });
@@ -107,11 +117,8 @@ export async function collecter() {
   // Un document inchangé n'est pas retéléchargé : on repart de l'état publié
   // précédemment plutôt que de perdre l'information ou d'afficher du vide.
   const precedent = await storeEtat.lire();
-  const reutiliser = (nouveau, cheminPrecedent, inchange) => {
-    if (nouveau !== null && nouveau !== undefined) return nouveau;
-    if (!inchange) return [];
-    return cheminPrecedent ?? [];
-  };
+  const reutiliser = (nouveau, cheminPrecedent) =>
+    reutiliserDerniereListe(nouveau, cheminPrecedent);
 
   const zonesBrutes = reutiliser(
     nhc.zones,

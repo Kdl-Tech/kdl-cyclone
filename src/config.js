@@ -16,6 +16,7 @@ export const CONFIG = {
   // le NHC (domaine public) n'a pas de quota et la détection de « 304 inchangé »
   // évite tout retraitement inutile.
   collectIntervalMs: 5 * 60 * 1000,       // 5 min
+  directIntervalMs: 60 * 1000,             // veille légère des bulletins officiels
   environmentIntervalMs: 60 * 60 * 1000,  // 1 h (données de modèle : maille horaire)
 
   // Au-delà, une donnée est signalée « périmée » dans l'interface.

@@ -14,13 +14,14 @@ import zlib from 'node:zlib';
 import crypto from 'node:crypto';
 
 import { CONFIG, ROOT } from './src/config.js';
-import { collecter } from './src/collector.js';
+import { collecter, verifierBulletinsOfficiels } from './src/collector.js';
 import { etat as storeEtat, bulletins as storeBulletins } from './src/store.js';
 import { PAGES, metaSysteme, balises, sitemap, robots } from './src/seo.js';
 import { lireTable as lireSlugs, resoudre as resoudreSlug } from './src/slugs.js';
 import { valider, enregistrer, verifierDebit, synthese as syntheseRetours, LIMITES } from './src/feedback.js';
 import { mesure } from './src/mesure.js';
-import { cheminImage, SECTEURS, CANAUX } from './src/sources/satellite.js';
+import { cheminImage, SECTEURS, CANAUX, rafraichirBoucle } from './src/sources/satellite.js';
+import { sargasses } from './src/sources/sargasses.js';
 import { COMMUNES, communePar } from './src/communes.js';
 import { territoire as territoirePar } from './src/territoires.js';
 import { fetchBulletin } from './src/sources/meteo.js';
@@ -534,8 +535,12 @@ const serveur = http.createServer(async (req, res) => {
     }
 
     if (chemin === '/api/satellite') {
+      const secteur = url.searchParams.get('secteur') || 'caraibes';
+      const canal = url.searchParams.get('canal') || 'geocolor';
+      if (!SECTEURS[secteur] || !CANAUX[canal]) return json(req, res, { erreur: 'Couche inconnue' }, 404);
       const { valeur } = await etatCourant();
-      const s = valeur?.satellite;
+      const principal = secteur === 'caraibes' && canal === 'geocolor';
+      const s = principal ? valeur?.satellite : await rafraichirBoucle(secteur, canal, null);
       if (!s) return json(req, res, { erreur: 'Boucle non disponible' }, 503);
       return json(req, res, {
         ...s,
@@ -543,6 +548,11 @@ const serveur = http.createServer(async (req, res) => {
         canaux: CANAUX,
         poidsTotalKo: Math.round((s.images || []).reduce((t, i) => t + (i.octets || 0), 0) / 1024),
       }, 200, 'no-cache');
+    }
+
+    if (chemin === '/api/sargasses') {
+      const couche = await sargasses();
+      return json(req, res, couche, couche.ok ? 200 : 503, couche.ok ? 'public, max-age=3600' : 'no-store');
     }
 
     // ---- Flux d'événements : la carte se met à jour sans rechargement.
@@ -790,27 +800,43 @@ function diffuser(type, donnees) {
 
 // ---- Boucle de collecte
 let collecteEnCours = false;
-async function tourDeCollecte(raison) {
+function publierCollecte(r, raison) {
+  cacheEtat = { valeur: null, etag: null, lu: 0 };
+
+  // On annonce ce qui a réellement changé : le client décide quoi recharger.
+  diffuser('maj', {
+    genereLe: r.genereLe,
+    systemes: r.systemes.length,
+    risque: r.situation.risque.niveau,
+    derniereImageSatellite: r.satellite?.derniereImage || null,
+    changements: (r.changements || []).length,
+  });
+  console.log(
+    `[kdl-cyclone] collecte ${raison} : ${r.systemes.length} système(s), risque ${r.situation.risque.label}, ${r.dureeCollecteMs} ms` +
+      (r.degradations.length ? ` — dégradations : ${r.degradations.length}` : ''),
+  );
+}
+
+async function tourDeCollecte(raison, prefetch = {}) {
   if (collecteEnCours) return;
   collecteEnCours = true;
   try {
-    const r = await collecter();
-    cacheEtat = { valeur: null, etag: null, lu: 0 };
-
-    // On annonce ce qui a réellement changé : le client décide quoi recharger.
-    diffuser('maj', {
-      genereLe: r.genereLe,
-      systemes: r.systemes.length,
-      risque: r.situation.risque.niveau,
-      derniereImageSatellite: r.satellite?.derniereImage || null,
-      changements: (r.changements || []).length,
-    });
-    console.log(
-      `[kdl-cyclone] collecte ${raison} : ${r.systemes.length} système(s), risque ${r.situation.risque.label}, ${r.dureeCollecteMs} ms` +
-        (r.degradations.length ? ` — dégradations : ${r.degradations.length}` : ''),
-    );
+    publierCollecte(await collecter(prefetch), raison);
   } catch (err) {
     console.error('[kdl-cyclone] échec de collecte :', err.message);
+  } finally {
+    collecteEnCours = false;
+  }
+}
+
+async function tourDeVeille() {
+  if (collecteEnCours) return;
+  collecteEnCours = true;
+  try {
+    const veille = await verifierBulletinsOfficiels();
+    if (veille.modifie) publierCollecte(await collecter(veille.prefetch), 'bulletin officiel détecté');
+  } catch (err) {
+    console.error('[kdl-cyclone] échec de veille officielle :', err.message);
   } finally {
     collecteEnCours = false;
   }
@@ -831,10 +857,12 @@ export function demarrer() {
   });
 
   const minuteur = setInterval(() => tourDeCollecte('planifiée'), CONFIG.collectIntervalMs);
+  const minuteurDirect = setInterval(tourDeVeille, CONFIG.directIntervalMs);
 
   const arret = (signal) => {
     console.log(`\n[kdl-cyclone] arrêt (${signal})`);
     clearInterval(minuteur);
+    clearInterval(minuteurDirect);
     // Les flux d'événements ne se terminent jamais seuls : sans cette fermeture,
     // `serveur.close()` les attendait et chaque redémarrage traînait jusqu'au
     // délai de secours de cinq secondes.
