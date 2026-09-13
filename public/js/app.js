@@ -1219,6 +1219,24 @@
     };
   }
 
+  /** Les mesures officielles fraîches remplacent les valeurs actuelles du modèle. */
+  function conditionsActuellesMeteo(terr, modele) {
+    var resultat = Object.assign({}, modele || {}, { officielle: false, source: 'Open-Meteo' });
+    var obs = terr && terr.observations;
+    if (!obs || !obs.disponible || obs.perime) return resultat;
+    var mesure = function (champ, repli) {
+      return champ && champ.valeur != null ? champ.valeur : repli;
+    };
+    resultat.officielle = true;
+    resultat.source = 'Météo-France';
+    resultat.mesureLe = obs.mesureLe;
+    resultat.temperature = mesure(obs.temperatureC, resultat.temperature);
+    resultat.humidite = mesure(obs.humiditePct, resultat.humidite);
+    resultat.pressionHpa = mesure(obs.pressionHpa, resultat.pressionHpa);
+    resultat.ventKmh = mesure(obs.ventMoyenKmh, resultat.ventKmh);
+    return resultat;
+  }
+
   function rendreGuadeloupe() {
     var terr = territoireActif();
     var c = terr.conditions && terr.conditions.maintenant;
@@ -2986,12 +3004,15 @@
       return;
     }
 
-    var m = b.maintenant;
+    var m = conditionsActuellesMeteo(terr, b.maintenant);
     var html = selecteurLieu()
       + '<h2 style="font-size:1.6rem;margin-bottom:var(--e2)">Météo — '
       + echapper(nomDuLieu(terr)) + '</h2>'
       + '<p style="color:var(--texte-doux);margin-bottom:var(--e5)">'
-      + 'Prévisions de modèle, actualisées ' + ilYA(b.recuLe) + '. '
+      + (m.officielle
+        ? 'Observations Météo-France mesurées à ' + heureLocale(m.mesureLe) + '. '
+          + 'Les prévisions sont affichées séparément comme données de modèle. '
+        : 'Secours Open-Meteo, actualisé ' + ilYA(b.recuLe) + '. ')
       + (b.lieu
         ? 'Relevé au point le plus proche de ' + echapper(b.lieu.nom) + '. '
         : 'Valeurs pour l\'ensemble du territoire. ')
@@ -3005,12 +3026,17 @@
       return '<div><dt>' + libelle + '</dt><dd>' + valeur + '</dd></div>';
     };
     html += '<div class="meteo-actuel" data-ciel="' + ciel(m.code, m.nuit) + '">'
+      + '<span class="etiquette ' + (m.officielle ? 'etiquette--officiel' : 'etiquette--secours') + '">'
+      + (m.officielle ? 'Mesuré · Météo-France' : 'Secours Open-Meteo') + '</span>'
       + '<div class="meteo-actuel__picto">' + picto(m.icone, 64) + '</div>'
       + '<div class="meteo-actuel__corps">'
       + '<div class="meteo-actuel__temp chiffres">' + (m.temperature != null ? Math.round(m.temperature) : '—') + '<span>°C</span></div>'
-      + '<div class="meteo-actuel__desc">' + echapper(m.description) + '</div>'
-      + '<div class="meteo-actuel__detail">Ressenti ' + (m.ressenti != null ? Math.round(m.ressenti) : '—') + ' °C'
-      + ' · humidité ' + (m.humidite != null ? m.humidite : '—') + ' %'
+      + '<div class="meteo-actuel__desc">' + (m.officielle
+        ? 'Observation officielle · ciel indicatif : ' + echapper(m.description)
+        : echapper(m.description)) + '</div>'
+      + '<div class="meteo-actuel__detail">' + (m.officielle ? ''
+        : 'Ressenti ' + (m.ressenti != null ? Math.round(m.ressenti) : '—') + ' °C · ')
+      + 'humidité ' + (m.humidite != null ? m.humidite : '—') + ' %'
       + ' · ' + (m.pressionHpa != null ? Math.round(m.pressionHpa) : '—') + ' hPa</div>'
       + '</div>'
       + (jour0
@@ -3041,7 +3067,8 @@
       + '<h3 class="section-titre section-titre--vent">Vent, mer et air</h3>'
       + '<div class="stats">'
       + stat('Vent', valeurOuIndispo(m.ventKmh, 'km/h'),
-        m.ventDirection != null ? 'de secteur ' + Math.round(m.ventDirection) + '°' : '', 'vent')
+        m.officielle ? 'mesuré par Météo-France'
+          : (m.ventDirection != null ? 'de secteur ' + Math.round(m.ventDirection) + '°' : ''), 'vent')
       + stat('Rafales', valeurOuIndispo(m.rafalesKmh, 'km/h'), '', 'vent')
       + stat('Houle', valeurOuIndispo(terr.mer && terr.mer.houleM, 'm', 1), 'hauteur significative', 'houle')
       + stat('Mer', valeurOuIndispo(terr.mer && terr.mer.sstC, '°C', 1), 'température de surface', 'mer')
@@ -3111,7 +3138,10 @@
     }
 
     html += '<p style="color:var(--texte-faible);font-size:.82rem">'
-      + 'Source : ' + echapper(b.source) + ' — licence ' + echapper(b.licence) + '. '
+      + (m.officielle
+        ? '<strong>Observations actuelles : Météo-France.</strong> '
+        : '<strong>Conditions actuelles de secours : Open-Meteo.</strong> ')
+      + 'Prévisions : ' + echapper(b.source) + ' — licence ' + echapper(b.licence) + '. '
       + 'Prévisions de modèle, sans validation par un prévisionniste. '
       + 'Pour une vigilance officielle, consultez les liens de la page '
       + echapper(terr.nom) + '.</p>';
