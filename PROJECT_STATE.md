@@ -111,3 +111,41 @@ Ne pas toucher au nouveau visuel validé ni revenir à l’ancienne version.
 ### Prochaine action
 
 Après feu vert de Karim : sauvegarde VPS vérifiée par SHA-256, déploiement 0.19.1, contrôle public des sources Météo-France/Open-Meteo, des deux calques environnementaux, de la version et du cache PWA, puis rollback immédiat au moindre défaut critique.
+
+## Checkpoint — 13 septembre 2026, 0.19.1 DÉPLOYÉE ET CONTRÔLÉE EN PRODUCTION
+
+- Production : `https://cyclone.kdl-tech.fr` en **0.19.1** (PM2 `kdl-cyclone` en ligne).
+- Commit de référence : `f320cce` sur `refonte/cyclone`, dépôt local propre et
+  synchronisé avec `origin` (0 en avance, 0 en retard).
+- `public/js/app.js` identique bit à bit entre le MSI et le VPS (SHA-256
+  `cb6515b65a042d6a89ce082fc8b2d8a927a6a2976a8e86727f70edf2528c056e`).
+- Sauvegarde avant déploiement : `/home/debian/backups/kdl-cyclone-pre-0.19.1-20260913T202932Z.tgz`
+  — SHA-256 `a18fb0400f283173ad46e2cf10cf63bcace42a1d6b7f173c43dc4d4d8240cb1d`.
+
+### Contrôles publics effectués sur la production 0.19.1
+
+- Tests unitaires : **215/215** réussis.
+- QA navigateur (`KDL_QA_BASE=https://cyclone.kdl-tech.fr npm run qa`) : **aucun défaut**.
+- PWA : **23/23**, aucun cache périmé, tous préfixés `kdl-cyclone-0.19.1`.
+- Grand écran : **7/7** de 1366 à 2560 px, accueil en colonnes, sans chevauchement.
+- Carte animée : **23/23**, 50 images/s, 2,1 Mo de mémoire JS, aucune dérive.
+- Endpoints : `/`, `/api/version`, `/api/etat`, `/api/sargasses`,
+  `/manifest.webmanifest`, `/sw.js` répondent tous en 200.
+- **Sargasses visibles dès l ouverture de la carte** : bandes vert foncé sur les
+  Caraïbes et le golfe, case cochée, mention « NOAA SIR · 2026-09-12 » dans les
+  calques et message « Sargasses NOAA du 2026-09-12 affichées ». Le défaut
+  signalé par Karim sur la 0.19.0 est corrigé.
+- Brumes de sable : couche présente, chargée à la demande, source NOAA GOES-19.
+- Hiérarchie des sources conforme : Météo-France reste la référence de vigilance
+  (bulletin daté affiché) ; Open-Meteo apparaît en secours explicite pour les
+  conditions et la mer quand aucune observation officielle fraîche n existe.
+- Écosystème KDL : `kdl-sync-apps.mjs` en mode lecture répond « toutes les
+  surfaces sont cohérentes » ; la carte Cyclone est bien présente dans le
+  KDL Pro Launcher.
+
+### État de la mission
+
+Chantier 0.19.1 **terminé**. Rien ne reste en attente sur cette version.
+Les évolutions suivantes restent celles listées plus haut dans « Suite du plan
+validé » (précision NHC/Open-Meteo, cartographie, spaghetti, Leaflet
+auto-hébergé, découpage de `app.js`, performance/PWA).
