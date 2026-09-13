@@ -2505,12 +2505,14 @@
     return fetch('/api/sargasses').then(function (r) { return r.ok ? r.json() : Promise.reject(); })
       .then(function (donnees) {
         carte.definirSargasses(donnees);
+        carte.definirCalque('sargasses', true);
         sargassesChargees = true;
         signaler('Sargasses NOAA du ' + (donnees.date || 'dernier relevé') + ' affichées.');
         return true;
       }).catch(function () {
         var c = document.querySelector('[data-calque="sargasses"]');
         if (c) c.checked = false;
+        if (carte) carte.definirCalque('sargasses', false);
         signaler('La couche sargasses NOAA est momentanément indisponible.');
         return false;
       });
@@ -3621,7 +3623,7 @@
     var calques = [
       ['satellite', 'Nuages satellite', false],
       ['sable', 'Brumes de sable', false],
-      ['sargasses', 'Sargasses', false],
+      ['sargasses', 'Sargasses', true],
       ['zones', 'Zones surveillées', true],
       ['trajectoires', 'Trajectoires officielles', true],
       ['cones', 'Cônes officiels', true],
@@ -3660,6 +3662,7 @@
     // L'invitation à charger la boucle s'affiche dès l'ouverture de la carte :
     // rien n'est téléchargé tant que l'utilisateur ne l'a pas demandé.
     rendreControlesSatellite();
+    chargerSargasses();
   }
 
   // ---------------------------------------------------------------- thème

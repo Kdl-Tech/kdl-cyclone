@@ -72,7 +72,7 @@
       cones: true,
       grille: true,
       sable: false,
-      sargasses: false,
+      sargasses: true,
     };
     this.boucles = {};
     this.sargasses = [];
