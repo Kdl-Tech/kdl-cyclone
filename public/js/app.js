@@ -1204,10 +1204,27 @@
 
   // ------------------------------------------------------------- Guadeloupe
 
+  /**
+   * Choisit la présentation des sources sans fusionner mesure et modèle.
+   * Une observation officielle ancienne reste visible comme telle, mais ouvre
+   * aussi le bloc de secours afin de ne pas laisser l'utilisateur sans valeur
+   * récente.
+   */
+  function strategieSourcesMeteo(terr) {
+    var obs = terr && terr.observations;
+    var observationsMf = Boolean(obs && obs.disponible);
+    return {
+      observationsMf: observationsMf,
+      secoursConditions: !(observationsMf && !obs.perime),
+    };
+  }
+
   function rendreGuadeloupe() {
     var terr = territoireActif();
     var c = terr.conditions && terr.conditions.maintenant;
     var mer = terr.mer;
+    var obs = terr.observations;
+    var strategieMeteo = strategieSourcesMeteo(terr);
 
     var html = '<h2 style="font-size:1.6rem;margin-bottom:var(--e2)">' + echapper(terr.nomLong || terr.nom) + '</h2>'
       + '<p style="color:var(--texte-doux);margin-bottom:var(--e5)">'
@@ -1299,7 +1316,6 @@
     // Mesures réelles des stations Météo-France, présentées AVANT les sorties
     // de modèle : ce qui a été constaté prime sur ce qui a été calculé. Le
     // tampon plein marque l'officiel, conformément à la direction artistique.
-    var obs = terr.observations;
     if (obs && obs.disponible) {
       var noteStation = function (m) {
         return m ? 'station à ' + nombre(m.distanceKm) + ' km' : '';
@@ -1368,26 +1384,41 @@
       + '<p id="note-rafales" style="color:var(--texte-faible);font-size:.82rem;margin-top:var(--e3)">'
       + '</p></div>';
 
-    html += '<div class="carte-bloc" style="margin-bottom:var(--e4)">'
-      + '<h3 class="section-titre"><span class="etiquette etiquette--modele">Modèle</span> Conditions actuelles</h3>'
-      + '<div class="stats">'
-      + stat('Vent', valeurOuIndispo(c && c.ventKmh, 'km/h'), 'à 10 mètres', 'vent')
-      + stat('Rafales', valeurOuIndispo(c && c.rafalesKmh, 'km/h'), '', 'vent')
-      + stat('Pluie', valeurOuIndispo(c && c.pluieMmH, 'mm/h', 1), 'intensité horaire', 'pluie')
-      + stat('Pression', valeurOuIndispo(c && c.pressionHpa, 'hPa'), '', 'pression')
-      + stat('Houle', valeurOuIndispo(mer && mer.houleM, 'm', 1), 'hauteur significative', 'houle')
-      + stat('Période de houle', valeurOuIndispo(mer && mer.periodeS, 's', 1), 'une longue période porte loin', 'houle')
-      + stat('Température de la mer', valeurOuIndispo(mer && mer.sstC, '°C', 1), 'carburant d\'un système tropical', 'mer')
-      + '</div>'
-      + '<p style="color:var(--texte-faible);font-size:.82rem;margin-top:var(--e4)">'
-      + '<strong>Source : Open-Meteo</strong> (modèles GFS, ECMWF et ICON), licence CC BY 4.0. '
-      + 'Ce sont des valeurs calculées par des modèles, pas des mesures.</p>'
-      + '</div>';
+    if (strategieMeteo.secoursConditions && c) {
+      html += '<div class="carte-bloc bloc-secours" style="margin-bottom:var(--e4)">'
+        + '<h3 class="section-titre"><span class="etiquette etiquette--secours">Secours Open-Meteo</span> '
+        + 'Conditions actuelles modélisées</h3>'
+        + '<div class="stats">'
+        + stat('Vent', valeurOuIndispo(c.ventKmh, 'km/h'), 'à 10 mètres', 'vent')
+        + stat('Rafales', valeurOuIndispo(c.rafalesKmh, 'km/h'), '', 'vent')
+        + stat('Pluie', valeurOuIndispo(c.pluieMmH, 'mm/h', 1), 'intensité horaire', 'pluie')
+        + stat('Pression', valeurOuIndispo(c.pressionHpa, 'hPa'), '', 'pression')
+        + '</div>'
+        + '<p style="color:var(--texte-faible);font-size:.82rem;margin-top:var(--e4)">'
+        + '<strong>Source de secours : Open-Meteo</strong> (modèles GFS, ECMWF et ICON), licence CC BY 4.0. '
+        + 'Ce bloc apparaît uniquement lorsque les observations Météo-France sont absentes ou anciennes.</p>'
+        + '</div>';
+    }
+
+    if (mer) {
+      html += '<div class="carte-bloc bloc-secours" style="margin-bottom:var(--e4)">'
+        + '<h3 class="section-titre section-titre--mer">'
+        + '<span class="etiquette etiquette--secours">Secours Open-Meteo Marine</span> État de la mer modélisé</h3>'
+        + '<div class="stats">'
+        + stat('Houle', valeurOuIndispo(mer.houleM, 'm', 1), 'hauteur significative', 'houle')
+        + stat('Période de houle', valeurOuIndispo(mer.periodeS, 's', 1), 'une longue période porte loin', 'houle')
+        + stat('Température de la mer', valeurOuIndispo(mer.sstC, '°C', 1), 'carburant d\'un système tropical', 'mer')
+        + '</div>'
+        + '<p style="color:var(--texte-faible);font-size:.82rem;margin-top:var(--e4)">'
+        + '<strong>Source de secours : Open-Meteo Marine.</strong> Valeurs de modèle, à confronter au bulletin '
+        + 'marine officiel Météo-France accessible plus bas.</p></div>';
+    }
 
     var jours = (terr.conditions && terr.conditions.jours) || [];
     if (jours.length) {
       html += '<div class="carte-bloc" style="margin-bottom:var(--e4)">'
-        + '<h3 class="section-titre section-titre--vent">Cinq prochains jours</h3>'
+        + '<h3 class="section-titre section-titre--vent">'
+        + '<span class="etiquette etiquette--secours">Secours Open-Meteo</span> Cinq prochains jours</h3>'
         + '<div class="stats">'
         + jours.map(function (j) {
           var d = new Date(j.date + 'T12:00:00');
@@ -1397,7 +1428,8 @@
         }).join('')
         + '</div>'
         + '<p style="color:var(--texte-faible);font-size:.82rem;margin-top:var(--e4)">'
-        + 'Rafales maximales prévues par modèle. Une prévision à cinq jours reste indicative : '
+        + '<strong>Prévision de secours Open-Meteo.</strong> Rafales maximales prévues par modèle. '
+        + 'Une prévision à cinq jours reste indicative : '
         + 'l\'incertitude croît fortement au-delà de 72 heures.</p>'
         + '</div>';
     }

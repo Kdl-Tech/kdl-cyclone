@@ -781,6 +781,7 @@ button { font: inherit; color: inherit; }
    l'officiel, l'encre KDL pour l'analyse maison, du pointillé pour l'incertain. */
 .etiquette--officiel { background: var(--ocean); color: #fff; border-color: var(--ocean); }
 .etiquette--modele   { background: var(--cyan-voile); color: var(--cyan); border-color: color-mix(in srgb, var(--cyan) 34%, transparent); }
+.etiquette--secours  { background: var(--ambre-voile); color: var(--ambre); border-color: color-mix(in srgb, var(--ambre-vif) 42%, transparent); }
 .etiquette--kdl      { background: var(--kdl-analyse-voile); color: var(--kdl-analyse); border-color: color-mix(in srgb, var(--kdl-analyse) 40%, transparent); }
 .etiquette--experimental { background: transparent; color: var(--kdl-analyse); border-color: color-mix(in srgb, var(--kdl-analyse) 45%, transparent); border-style: dashed; }
 .etiquette--perime   { background: var(--n3-voile); color: var(--n3); border-color: color-mix(in srgb, var(--n3) 32%, transparent); }
@@ -1388,6 +1389,7 @@ button { font: inherit; color: inherit; }
 .est-cache { display: none !important; }
 
 .bloc-modele { margin-bottom: var(--e4); }
+.bloc-secours { border-color: color-mix(in srgb, var(--ambre-vif) 24%, var(--bordure)); }
 
 /* Carte des rafales prévues (ARPEGE).
    L'image arrive sur fond transparent : elle est posée sur un aplat sombre,
